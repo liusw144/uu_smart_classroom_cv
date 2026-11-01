@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "project": "uu_smart_classroom_cv",
+  "stage": "foundation",
+  "language": "zh-CN",
+  "modules": {
+    "backend": {"build": "mvn -B verify", "runtime": "Java 21", "entry": "backend/README.md"},
+    "frontend": {"build": "npm ci && npm run verify", "runtime": "Node 22.18.0", "entry": "frontend/README.md"},
+    "fastapi": {"build": "uv sync --frozen && uv run ruff check . && uv run pytest", "runtime": "Python 3.12", "entry": "fastapi/README.md"}
+  },
+  "context": ["AGENTS.md", "docs/architecture/overview.md", "docs/project-status.md"],
+  "gates": {"structure": "python scripts/quality_gate.py", "tests": "python -m unittest discover -s tests -v", "production": "python scripts/quality_gate.py --production"},
+  "contracts": ["contracts/business.openapi.json", "contracts/vision.openapi.json", "contracts/detection-request.schema.json"],
+  "production_blockers": [
+    "真实模型及行为规则尚未接入与评测",
+    "教学业务、持久作业及边缘节点协议未完成",
+    "生产节点 mTLS、登录限流及审计未完成",
+    "四模式部署、数据库恢复及容量验收未完成"
+  ]
+}

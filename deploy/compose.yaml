@@ -1,0 +1,72 @@
+name: uu-smart-classroom
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请先生成本地环境配置}
+      MYSQL_DATABASE: classroom
+      MYSQL_USER: classroom
+      MYSQL_PASSWORD: ${DB_PASSWORD:?缺少数据库密码}
+    ports: ["127.0.0.1:3307:3306"]
+    volumes: ["mysql-data:/var/lib/mysql"]
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping --host=127.0.0.1 --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+  redis:
+    image: redis:7.4-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?缺少会话存储密码}
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    ports: ["127.0.0.1:6380:6379"]
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+  backend:
+    profiles: ["app"]
+    build: ../backend
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:mysql://mysql:3306/classroom?serverTimezone=UTC&characterEncoding=UTF-8
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      BOOTSTRAP_ENABLED: ${BOOTSTRAP_ENABLED:-false}
+      BOOTSTRAP_PASSWORD: ${BOOTSTRAP_PASSWORD:-}
+    ports: ["127.0.0.1:8089:8089"]
+    depends_on:
+      mysql: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+  teacher:
+    profiles: ["app"]
+    build: {context: ../frontend, target: teacher}
+    ports: ["127.0.0.1:5173:8080"]
+    depends_on: [backend]
+  admin:
+    profiles: ["app"]
+    build: {context: ../frontend, target: admin}
+    ports: ["127.0.0.1:5172:8080"]
+    depends_on: [backend]
+  vision:
+    profiles: ["vision"]
+    build: ../fastapi
+    environment:
+      VISION_APP_ENV: development
+      VISION_SERVICE_TOKEN: ${VISION_SERVICE_TOKEN:?缺少视觉服务开发凭据}
+    ports: ["127.0.0.1:5000:5000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health/live')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+volumes:
+  mysql-data:
+  redis-data:

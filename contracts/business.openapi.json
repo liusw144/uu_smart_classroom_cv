@@ -1,0 +1,20 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "智慧课堂业务接口", "version": "0.1.0", "description": "当前仅包含身份基础，不代表教学业务已完成"},
+  "servers": [{"url": "/"}],
+  "paths": {
+    "/api/v1/auth/login": {"post": {"operationId": "login", "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LoginRequest"}}}}, "responses": {"200": {"description": "登录成功", "content": {"application/json": {"schema": {"type": "object", "required": ["data"], "properties": {"data": {"$ref": "#/components/schemas/LoginResponse"}}}}}}, "400": {"$ref": "#/components/responses/Invalid"}, "401": {"$ref": "#/components/responses/Unauthorized"}}}},
+    "/api/v1/auth/me": {"get": {"operationId": "currentUser", "security": [{"sessionToken": []}], "responses": {"200": {"description": "服务端确认的学校身份", "content": {"application/json": {"schema": {"type": "object", "properties": {"data": {"$ref": "#/components/schemas/User"}}, "required": ["data"]}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"description": "账号权限已变化"}}}},
+    "/api/v1/auth/logout": {"post": {"operationId": "logout", "security": [{"sessionToken": []}], "responses": {"200": {"description": "会话已注销", "content": {"application/json": {"schema": {"type": "object", "properties": {"data": {"const": true}}, "required": ["data"]}}}}, "401": {"$ref": "#/components/responses/Unauthorized"}}}}
+  },
+  "components": {
+    "securitySchemes": {"sessionToken": {"type": "http", "scheme": "bearer", "description": "Sa-Token 服务端会话，不是 JWT"}},
+    "responses": {"Unauthorized": {"description": "未登录、失效或无效身份", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}, "Invalid": {"description": "输入无效", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}},
+    "schemas": {
+      "LoginRequest": {"type": "object", "additionalProperties": false, "required": ["school_code", "username", "password"], "properties": {"school_code": {"type": "string", "minLength": 1, "maxLength": 64}, "username": {"type": "string", "minLength": 1, "maxLength": 64}, "password": {"type": "string", "minLength": 1, "maxLength": 72}}},
+      "User": {"type": "object", "required": ["id", "tenant_id", "username", "role", "permissions"], "properties": {"id": {"type": "integer"}, "tenant_id": {"type": "integer"}, "username": {"type": "string"}, "role": {"enum": ["TEACHER", "SCHOOL_ADMIN", "PLATFORM_OPERATOR"]}, "permissions": {"type": "array", "items": {"type": "string"}}}},
+      "LoginResponse": {"type": "object", "required": ["access_token", "expires_in", "user"], "properties": {"access_token": {"type": "string"}, "expires_in": {"type": "integer"}, "user": {"$ref": "#/components/schemas/User"}}},
+      "Error": {"type": "object", "required": ["error"], "properties": {"error": {"type": "object", "required": ["code", "message", "request_id"], "properties": {"code": {"type": "string"}, "message": {"type": "string"}, "request_id": {"type": "string"}}}}}
+    }
+  }
+}

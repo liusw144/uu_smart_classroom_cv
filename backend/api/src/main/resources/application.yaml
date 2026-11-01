@@ -1,0 +1,63 @@
+server:
+  port: 8089
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+spring:
+  application:
+    name: uu-smart-classroom-backend
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3307/classroom?serverTimezone=UTC&characterEncoding=UTF-8}
+    username: ${DB_USER:classroom}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 5000
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6380}
+      password: ${REDIS_PASSWORD}
+      timeout: 3s
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    deserialization:
+      fail-on-unknown-properties: true
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db,redis
+sa-token:
+  token-name: Authorization
+  token-prefix: Bearer
+  timeout: 7200
+  active-timeout: 1800
+  is-read-header: true
+  is-read-cookie: false
+  is-read-body: false
+  is-log: false
+  is-print: false
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+classroom:
+  bootstrap:
+    enabled: ${BOOTSTRAP_ENABLED:false}
+    password: ${BOOTSTRAP_PASSWORD:}
+logging:
+  pattern:
+    level: '%5p [request_id=%X{request_id}]'

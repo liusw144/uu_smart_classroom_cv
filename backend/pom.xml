@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>4.1.2</version><relativePath/></parent>
+  <groupId>cn.uusmart.classroom</groupId><artifactId>classroom-backend</artifactId><version>0.1.0-SNAPSHOT</version><packaging>pom</packaging>
+  <name>UU Smart Classroom CV Backend</name>
+  <description>智慧课堂视觉分析平台业务后端</description>
+  <url>https://github.com/liusw144/uu_smart_classroom_cv</url>
+  <licenses><license><name>Apache License, Version 2.0</name><url>https://www.apache.org/licenses/LICENSE-2.0</url><distribution>repo</distribution></license></licenses>
+  <scm><connection>scm:git:https://github.com/liusw144/uu_smart_classroom_cv.git</connection><url>https://github.com/liusw144/uu_smart_classroom_cv</url></scm>
+  <properties><java.version>21</java.version><sa-token.version>1.46.0</sa-token.version><mybatis-plus.version>3.5.18</mybatis-plus.version><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding></properties>
+  <modules><module>domain</module><module>application</module><module>infrastructure</module><module>api</module></modules>
+  <dependencyManagement><dependencies>
+    <dependency><groupId>cn.dev33</groupId><artifactId>sa-token-spring-boot4-starter</artifactId><version>${sa-token.version}</version></dependency>
+    <dependency><groupId>cn.dev33</groupId><artifactId>sa-token-redis-template</artifactId><version>${sa-token.version}</version></dependency>
+    <dependency><groupId>com.baomidou</groupId><artifactId>mybatis-plus-spring-boot4-starter</artifactId><version>${mybatis-plus.version}</version></dependency>
+  </dependencies></dependencyManagement>
+  <dependencies><dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency></dependencies>
+  <build><plugins>
+    <plugin><groupId>com.diffplug.spotless</groupId><artifactId>spotless-maven-plugin</artifactId><version>3.10.4</version><configuration><java><googleJavaFormat><version>1.24.0</version></googleJavaFormat></java></configuration><executions><execution><goals><goal>check</goal></goals></execution></executions></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-enforcer-plugin</artifactId><version>3.6.2</version><executions><execution><id>运行环境</id><goals><goal>enforce</goal></goals><configuration><rules><requireJavaVersion><version>[21,22)</version><message>请使用 Java 21 构建本项目</message></requireJavaVersion><requireMavenVersion><version>[3.9,)</version></requireMavenVersion></rules></configuration></execution></executions></plugin>
+  </plugins></build>
+  <profiles><profile><id>integration</id><build><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-failsafe-plugin</artifactId><version>3.5.6</version><executions><execution><goals><goal>integration-test</goal><goal>verify</goal></goals></execution></executions></plugin></plugins></build></profile></profiles>
+</project>

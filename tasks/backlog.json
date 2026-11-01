@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "tasks": [
+    {"id":"M0-FOUNDATION","title":"独立模块与 Harness 工程基础","status":"implemented","depends_on":[]},
+    {"id":"M1-IDENTITY","title":"生产登录限流、初始化、权限变更与完整审计","status":"todo","depends_on":["M0-FOUNDATION"]},
+    {"id":"M1-TEACHING","title":"学校隔离的班级、课程和课堂任务","status":"todo","depends_on":["M1-IDENTITY"]},
+    {"id":"M1-JOBS","title":"持久作业、租约、取消、重试和结果幂等","status":"todo","depends_on":["M1-TEACHING"]},
+    {"id":"M1-ASSETS","title":"素材 ID、存储域、授权访问与保留期","status":"todo","depends_on":["M1-TEACHING"]},
+    {"id":"M1-EDGE","title":"节点注册、mTLS、出站 Agent 与离线 Outbox","status":"todo","depends_on":["M1-JOBS"]},
+    {"id":"M1-MODELS","title":"真实模型、关键点解码、规则与课堂标注评测","status":"todo","depends_on":["M1-ASSETS"]},
+    {"id":"M1-IMAGE","title":"真实图片检测完整闭环","status":"todo","depends_on":["M1-EDGE","M1-MODELS"]},
+    {"id":"M2-VIDEO","title":"视频、批量、摄像头、背压及容量基准","status":"todo","depends_on":["M1-IMAGE"]},
+    {"id":"M2-REPORTS","title":"统计口径、模板、AI 适配及 PDF 报告","status":"todo","depends_on":["M1-IMAGE"]},
+    {"id":"M3-DEPLOY","title":"四模式安装、升级、恢复及证书轮换","status":"todo","depends_on":["M2-VIDEO","M2-REPORTS"]},
+    {"id":"M4-PRODUCTION","title":"真实容量、算法、隔离与回滚验收","status":"todo","depends_on":["M3-DEPLOY"]}
+  ]
+}

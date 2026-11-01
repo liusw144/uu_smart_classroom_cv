@@ -1,0 +1,114 @@
+:root {
+  font-family: 'Microsoft YaHei', system-ui, sans-serif;
+  color: #17332e;
+  background: #f2f6f3;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+.shell {
+  max-width: 960px;
+  margin: auto;
+  padding: 36px 24px 48px;
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand {
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.stage {
+  color: #50635e;
+  font-size: 13px;
+  border: 1px solid #b9cbc4;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+.intro {
+  margin: 72px 0 32px;
+  max-width: 650px;
+}
+.eyebrow {
+  color: #476b60;
+  font-size: 14px;
+}
+h1 {
+  font-size: clamp(32px, 5vw, 46px);
+  margin: 12px 0;
+}
+h2 {
+  font-size: 22px;
+  margin: 0 0 24px;
+}
+p,
+dd {
+  line-height: 1.7;
+}
+.panel {
+  background: white;
+  border: 1px solid #d9e4df;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 560px;
+}
+form {
+  display: grid;
+  gap: 10px;
+}
+input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #a8bdb4;
+  border-radius: 7px;
+  font: inherit;
+  margin-bottom: 10px;
+}
+button {
+  padding: 13px 24px;
+  background: #186c50;
+  color: white;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  font: inherit;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+input:focus-visible,
+button:focus-visible {
+  outline: 3px solid #e8b35d;
+  outline-offset: 3px;
+}
+.error {
+  color: #9b2a26;
+  max-width: 560px;
+}
+footer {
+  margin-top: 36px;
+  color: #536b62;
+  font-size: 13px;
+}
+dt {
+  color: #536b62;
+}
+dd {
+  margin: 0 0 12px;
+}
+@media (max-width: 600px) {
+  .intro {
+    margin-top: 44px;
+  }
+  .panel {
+    padding: 24px;
+  }
+}

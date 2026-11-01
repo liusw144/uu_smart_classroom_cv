@@ -1,0 +1,33 @@
+name: 问题报告
+description: 提供可复现的功能或工程问题
+title: "[问题] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: 请勿提交凭据、学生信息或课堂录像；安全问题请先阅读 SECURITY.md。
+  - type: input
+    id: version
+    attributes:
+      label: 提交或版本
+      description: 填写 git rev-parse HEAD 的结果或发行版本
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 最小复现步骤
+      description: 说明模块、命令、前置条件与合成输入
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 预期与实际行为
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境与已脱敏日志
+      description: 提供操作系统、工具版本、部署模式和请求编号，不要贴真实令牌或素材
