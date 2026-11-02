@@ -8,6 +8,7 @@ import sys
 def main():
     root = Path(__file__).resolve().parents[1]
     environment = os.environ.copy()
+    environment['UV_CACHE_DIR']=str(root/'runtime/cache/uv')
     commands = [
         (root, [sys.executable, "scripts/quality_gate.py"]),
         (root, [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"]),
@@ -18,6 +19,10 @@ def main():
         (root / "fastapi", ["uv", "run", "ruff", "check", "."]),
         (root / "fastapi", ["uv", "run", "ruff", "format", "--check", "."]),
         (root / "fastapi", ["uv", "run", "pytest"]),
+        (root / "edge", ["uv", "sync", "--frozen"]),
+        (root / "edge", ["uv", "run", "ruff", "check", "."]),
+        (root / "edge", ["uv", "run", "ruff", "format", "--check", "."]),
+        (root / "edge", ["uv", "run", "pytest"]),
     ]
     for directory, command in commands:
         if shutil.which(command[0], path=environment.get("PATH")) is None:

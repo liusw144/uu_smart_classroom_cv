@@ -1,0 +1,42 @@
+[
+  {
+    "Repository": "github/spec-kit",
+    "Branch": "main",
+    "SHA": "7370e592f3cd9c06e5b698983957e227c75b30e2",
+    "License": "MIT",
+    "Archived": false,
+    "Pushed": "2026-10-30T16:19:58Z"
+  },
+  {
+    "Repository": "openai/symphony",
+    "Branch": "main",
+    "SHA": "be10a1b79df723d6d7612b5651c8522704dafb2e",
+    "License": "Apache-2.0",
+    "Archived": false,
+    "Pushed": "2026-09-15T22:14:59Z"
+  },
+  {
+    "Repository": "anthropics/claude-quickstarts",
+    "Branch": "main",
+    "SHA": "1a18c340ca42b9137d991637afe867bdcf70a9ce",
+    "License": "MIT",
+    "Archived": false,
+    "Pushed": "2026-10-30T19:48:17Z"
+  },
+  {
+    "Repository": "fastapi/full-stack-fastapi-template",
+    "Branch": "master",
+    "SHA": "f4bcfaba7c85be3c6332cc74a20819f586dcdbc6",
+    "License": "MIT",
+    "Archived": false,
+    "Pushed": "2026-11-01T12:10:45Z"
+  },
+  {
+    "Repository": "dromara/RuoYi-Vue-Plus",
+    "Branch": "6.X",
+    "SHA": "9227f626a3a37e1546d6c291ed398183e94df92b",
+    "License": "MIT",
+    "Archived": false,
+    "Pushed": "2026-11-02T01:32:44Z"
+  }
+]

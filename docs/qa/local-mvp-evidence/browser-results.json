@@ -1,0 +1,73 @@
+{
+  "scope": "真实Vue→Java→MySQL/Redis及FastAPI不可用路径，合成2像素图片，无模型成功推理",
+  "results": [
+    {
+      "name": "管理端真实登录及导航",
+      "status": "passed"
+    },
+    {
+      "name": "管理端新增教师",
+      "status": "passed"
+    },
+    {
+      "name": "教师端真实登录",
+      "status": "passed"
+    },
+    {
+      "name": "教师新增与编辑班级",
+      "status": "passed"
+    },
+    {
+      "name": "教师课程继承班级关系",
+      "status": "passed"
+    },
+    {
+      "name": "教师创建课堂任务",
+      "status": "passed"
+    },
+    {
+      "name": "有引用的班级删除被拒绝",
+      "status": "passed"
+    },
+    {
+      "name": "管理端维护模型档案",
+      "status": "passed"
+    },
+    {
+      "name": "真实图片提交与FastAPI不可用反馈",
+      "status": "passed"
+    },
+    {
+      "name": "素材列表与授权图片预览",
+      "status": "passed"
+    },
+    {
+      "name": "失败记录可查询且没有成功结果",
+      "status": "passed"
+    },
+    {
+      "name": "教务模板报告与中文PDF输出",
+      "status": "passed"
+    },
+    {
+      "name": "教师头像与个人资料保存",
+      "status": "passed"
+    },
+    {
+      "name": "修改密码后必须重新登录",
+      "status": "passed"
+    },
+    {
+      "name": "公告发布后教师可见",
+      "status": "passed"
+    },
+    {
+      "name": "管理员审计查询",
+      "status": "passed"
+    },
+    {
+      "name": "按本次记录编号清理人工测试业务数据",
+      "status": "passed"
+    }
+  ]
+}

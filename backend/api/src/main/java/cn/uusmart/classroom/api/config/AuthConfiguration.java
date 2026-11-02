@@ -13,6 +13,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class AuthConfiguration implements WebMvcConfigurer {
+  private final cn.uusmart.classroom.api.web.AuditInterceptor audit;
+
+  public AuthConfiguration(cn.uusmart.classroom.api.web.AuditInterceptor audit) {
+    this.audit = audit;
+  }
+
   @Bean
   BCryptPasswordEncoder passwords() {
     return new BCryptPasswordEncoder(12);
@@ -26,6 +32,7 @@ public class AuthConfiguration implements WebMvcConfigurer {
 
   @Override
   public void addInterceptors(InterceptorRegistry registry) {
+    registry.addInterceptor(audit).addPathPatterns("/api/**");
     registry
         .addInterceptor(new SaInterceptor(handle -> StpUtil.checkLogin()))
         .addPathPatterns("/api/**")

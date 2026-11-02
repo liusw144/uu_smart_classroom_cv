@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@org.springframework.core.annotation.Order(0)
 @ConditionalOnProperty(name = "classroom.bootstrap.enabled", havingValue = "true")
 public class DevelopmentBootstrap implements ApplicationRunner {
   private final JdbcTemplate jdbc;

@@ -1,6 +1,6 @@
 # UU 智慧课堂视觉分析平台
 
-本仓库提供课堂视觉分析平台的工程基础，采用统一代码、业务管理与边缘推理解耦的方向。当前处于 M0 开发阶段：教学业务、真实模型、持久任务和生产节点认证尚待交付，不应直接作为生产系统上线。
+本仓库提供课堂视觉分析平台，采用统一代码、业务管理与边缘推理解耦。当前已具备本机教务业务、YOLOX/RTMPose真实图片与短视频推理、摄像头采样、本地Qwen辅助报告、持久作业及边缘短时离线回传。课堂精度、生产节点认证及容量尚未验收，不应直接作为生产系统上线。
 
 仓库：https://github.com/liusw144/uu_smart_classroom_cv 。原创代码与原创文档使用 [Apache License 2.0](LICENSE)，第三方内容说明见 [NOTICE](NOTICE) 与 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
@@ -10,6 +10,8 @@ cd uu_smart_classroom_cv
 ```
 
 Windows 指南以 `D:\self\uu_smart_classroom_cv` 为本地示例路径，可按实际克隆位置调整。
+
+直接使用本机 MySQL/Redis 时，先阅读[本机最小版本运行指南](docs/guides/本机最小版本运行指南.md)，再按[真实模型演示指南](docs/guides/真实模型本机演示指南.md)启用模型、视频、摄像头、AI及edge。教师端5173、管理端5172、Java8089、视觉5000、Qwen18188。凭据只放在Git忽略的 `.env.local`。最新证据见[真实模型验收](docs/qa/real-model-verification-2026-11-02.md)。
 
 ## 模块地图
 
@@ -25,6 +27,8 @@ frontend/                 独立 npm workspace
   packages/shared/        共享会话、类型、组件
 fastapi/                  独立 Python 项目及虚拟环境
   src/classroom_vision/   api、core、domain、inference
+edge/                     独立 Python 执行器、SQLite Outbox及独立虚拟环境
+models/                   公共下载清单、哈希与来源，不包含权重
 contracts/                跨模块 OpenAPI 与 JSON Schema
 harness/                  AI 开发规则清单与提示模板
 tasks/                    任务模板、依赖与验收记录
@@ -45,7 +49,7 @@ python scripts/quality_gate.py
 python -m unittest discover -s tests -v
 ```
 
-三个模块分别安装与验证，不能在根目录混装依赖。具体见 [后端](backend/README.md)、[前端](frontend/README.md)、[视觉服务](fastapi/README.md)。全量本机验证可用 `python scripts/verify.py`，该命令不代替数据库、容器和真实模型验证。
+各模块分别安装与验证，不能在根目录混装依赖。具体见 [后端](backend/README.md)、[前端](frontend/README.md)、[视觉服务](fastapi/README.md)和[边缘执行器](edge/README.md)。全量基础验证可用 `python scripts/verify.py`，该命令不代替数据库、容器和真实模型验证。
 
 ## 本地运行
 

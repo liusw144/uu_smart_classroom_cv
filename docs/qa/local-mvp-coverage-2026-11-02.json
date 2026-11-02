@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "assessed_at": "2026-11-02",
+  "stage": "local_mvp",
+  "production_ready": false,
+  "scope": "本机最小业务验收；local_minimum不等于原产品全部细节通过或生产认证。",
+  "features": [
+    {
+      "id": "C01",
+      "title": "教师登录",
+      "status": "local_minimum",
+      "observation": "真实教师登录、会话、退出与停用检查；开发账号由本机seed准备。"
+    },
+    {
+      "id": "C02",
+      "title": "管理员登录",
+      "status": "local_minimum",
+      "observation": "独立管理员入口及本校业务台；教师不能进入管理界面。"
+    },
+    {
+      "id": "C03",
+      "title": "认证与资源归属",
+      "status": "local_minimum",
+      "observation": "Sa-Token、活跃身份、角色及每项资源的学校/负责人校验。"
+    },
+    {
+      "id": "C04",
+      "title": "文件与头像",
+      "status": "local_minimum",
+      "observation": "PNG/JPEG上传、授权预览、头像及引用保护删除；没有视频上传。"
+    },
+    {
+      "id": "T01",
+      "title": "教师工作台",
+      "status": "partial",
+      "observation": "真实班级、课程、任务、检测作业计数；没有行为趋势图。"
+    },
+    {
+      "id": "T02",
+      "title": "班级管理",
+      "status": "local_minimum",
+      "observation": "班级增查改删、名称搜索、分页及归属隔离。"
+    },
+    {
+      "id": "T03",
+      "title": "课程管理",
+      "status": "local_minimum",
+      "observation": "课程增查改删、班级关联、负责人继承及引用保护。"
+    },
+    {
+      "id": "T04",
+      "title": "课堂任务",
+      "status": "local_minimum",
+      "observation": "课堂任务增查改删、课程/班级关系继承、计划时间及引用保护。"
+    },
+    {
+      "id": "T05",
+      "title": "行为检测",
+      "status": "partial",
+      "observation": "图片上传和真实不可用反馈闭环；没有成功检测，批量/视频/摄像头未实现。"
+    },
+    {
+      "id": "T06",
+      "title": "检测记录",
+      "status": "partial",
+      "observation": "失败作业持久化、状态/名称筛选、详情、删除与学校隔离；没有真实标注结果。"
+    },
+    {
+      "id": "T07",
+      "title": "课堂统计",
+      "status": "not_implemented",
+      "observation": "未接入模型及真实行为统计，不能用教务人数替代推理人数。"
+    },
+    {
+      "id": "T08",
+      "title": "AI课堂分析",
+      "status": "not_implemented",
+      "observation": "没有AI课堂分析；新增教务模板不作为本需求完成。"
+    },
+    {
+      "id": "T09",
+      "title": "分析报告",
+      "status": "partial",
+      "observation": "教务模板报告可查询、删除及浏览器打印PDF；不是原需求的行为分析报告。"
+    },
+    {
+      "id": "T10",
+      "title": "教学公告",
+      "status": "local_minimum",
+      "observation": "仅查看本校已发布公告及正文。"
+    },
+    {
+      "id": "T11",
+      "title": "个人中心",
+      "status": "local_minimum",
+      "observation": "资料、只读账号、头像、原密码验证改密和改密后会话失效。"
+    },
+    {
+      "id": "A01",
+      "title": "数据概览",
+      "status": "partial",
+      "observation": "教务及作业状态真实计数；没有原文全部图表。"
+    },
+    {
+      "id": "A02",
+      "title": "用户管理",
+      "status": "local_minimum",
+      "observation": "本校账号新增、查询、编辑、停用、删除及当前/最后管理员保护。"
+    },
+    {
+      "id": "A03",
+      "title": "操作日志",
+      "status": "local_minimum",
+      "observation": "已登录请求审计与账号/路径搜索；不含完整匿名安全审计或事务性审计。"
+    },
+    {
+      "id": "A04",
+      "title": "班级管理",
+      "status": "local_minimum",
+      "observation": "本校班级CRUD，可选择本校负责人。"
+    },
+    {
+      "id": "A05",
+      "title": "课程管理",
+      "status": "local_minimum",
+      "observation": "本校课程CRUD与班级引用保护。"
+    },
+    {
+      "id": "A06",
+      "title": "检测任务",
+      "status": "local_minimum",
+      "observation": "本校课堂任务CRUD与负责人关系约束。"
+    },
+    {
+      "id": "A07",
+      "title": "检测记录",
+      "status": "partial",
+      "observation": "失败作业查询、详情、删除；没有成功检测图像标注及视频详情。"
+    },
+    {
+      "id": "A08",
+      "title": "模型权重",
+      "status": "partial",
+      "observation": "模型档案版本、说明、启停及引用保护；未交付权重上传、校验和实际加载。"
+    },
+    {
+      "id": "A09",
+      "title": "行为类别",
+      "status": "partial",
+      "observation": "行为类别档案维护；尚无真实结果与规则映射、引用统计。"
+    },
+    {
+      "id": "A10",
+      "title": "分析报告",
+      "status": "partial",
+      "observation": "教务汇总报告管理；不是成功检测后的课堂行为分析。"
+    },
+    {
+      "id": "A11",
+      "title": "AI模型配置",
+      "status": "not_implemented",
+      "observation": "AI连接、密钥配置和接口测试未实现。"
+    },
+    {
+      "id": "A12",
+      "title": "公告管理",
+      "status": "local_minimum",
+      "observation": "本校公告发布、下架、查询、编辑和删除。"
+    },
+    {
+      "id": "A13",
+      "title": "个人中心",
+      "status": "local_minimum",
+      "observation": "管理员个人资料、头像与原密码验证改密。"
+    }
+  ],
+  "test_counts": {
+    "root": 10,
+    "java_unit": 9,
+    "database_http_redis": 21,
+    "frontend": 5,
+    "fastapi": 11,
+    "browser_e2e": 17,
+    "previous_audit_regressions": 22
+  },
+  "not_implemented": [
+    "真实模型成功推理",
+    "视频、批量、摄像头",
+    "课堂行为统计",
+    "AI分析与配置",
+    "作业租约、重试、取消",
+    "边缘Agent、mTLS、离线Outbox",
+    "四模式生产部署与恢复容量"
+  ],
+  "evidence_paths": [
+    ".harness/local-mvp-final-all.log",
+    ".harness/local-mvp-final-java.log",
+    ".harness/local-e2e/results.json"
+  ]
+}

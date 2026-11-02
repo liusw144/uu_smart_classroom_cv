@@ -1,4 +1,4 @@
-export function createSession() {
+export function createSession(onClear?: () => void) {
   let token: string | undefined
   return {
     setToken(value: string) {
@@ -9,6 +9,7 @@ export function createSession() {
     },
     clear() {
       token = undefined
+      onClear?.()
     },
   }
 }

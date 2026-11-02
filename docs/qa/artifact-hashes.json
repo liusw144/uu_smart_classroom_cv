@@ -1,0 +1,17 @@
+{
+  "feature-validation-2026-11-02.json": "3c29a85069b99abfc099824ad7e684ed0b5f51b9f6938a56eb8178300bd9270d",
+  "full-validation-2026-11-02.md": "4fac20d6445fb3b889e0dcbd649ddcfd2dc093644055b036d5671abb9b10a587",
+  "harness-references-2026-11-02.md": "4720875c90785c167e18e9c2932a1bd00e48c724f4742c347ed948eef7b36639",
+  "audit-cases/AuditJavaBoundaries.java": "63fcd45418aebac5acf1d549d3dd6d6b7781946b2d30ec54d2366667c3a1059e",
+  "audit-cases/browser-audit.cjs": "8ec70d8f7edd93603cee72fee4608dacc232873923fe37f2e2c2fdf815b653b7",
+  "audit-cases/README.md": "fed8e647254f09efa6bb2df6e878c65ab85ef285f8e93f57d776aaf3ce70bfce",
+  "audit-cases/test_runtime_boundaries.py": "10d0e05c5e76506b61fd230e1a2ac14da41ab23c301ff9729025ee4621b98ef3",
+  "evidence/baseline.log": "6a6415a83a5eac8ee77d858754cbbe318e9b11c617881fea01b0cf861fd0feda",
+  "evidence/browser-results.json": "1e5bdda31332f55df0207e576304080063ebc9b5094ae9cd1a441e521369f6a6",
+  "evidence/java-boundaries.log": "c810fe8dd32e29180b1462f28c7b3a5a2c5c481fa666fcc5523d4e31a194f710",
+  "evidence/login-error-fixture.png": "2b1fe6d00b2f5f801a566dd4f499f00856e8cc4580cbb8fe9cbc8b4291dc288f",
+  "evidence/reference-metadata.json": "ef692651fd4917a23539bf895f26432fcc7979b3abbf40705f9018e6bed9cfd9",
+  "evidence/runtime-audit.log": "30b6074bb4678b5bc416e569dffde5c3361c643948577d09eb30a3f4ed9c2417",
+  "evidence/runtime-audit.xml": "f25f9caaeaf200532bc27d86e6af37f056b204f16a619552ef1654342a16c163",
+  "evidence/teacher-fixture.png": "55274eaf1cea8b1a1f03a45db666a83862a0bcf45695a5ce4683fc8b7c8b4397"
+}

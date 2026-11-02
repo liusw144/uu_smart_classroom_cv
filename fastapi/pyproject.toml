@@ -5,7 +5,16 @@ description = "智慧课堂独立视觉服务"
 license = "Apache-2.0"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
-dependencies = ["fastapi==0.162.0", "uvicorn==0.54.0", "pydantic-settings==2.16.2"]
+dependencies = [
+    "fastapi==0.162.0",
+    "uvicorn==0.54.0",
+    "pydantic-settings==2.16.2",
+    "rtmlib==0.0.15",
+    "onnxruntime>=1.23,<2",
+    "opencv-python>=4.11,<5",
+    "numpy>=2.2,<3",
+    "opencv-contrib-python==4.14.0.94",
+]
 
 [project.urls]
 Repository = "https://github.com/liusw144/uu_smart_classroom_cv"

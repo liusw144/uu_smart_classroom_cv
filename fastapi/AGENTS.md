@@ -4,6 +4,6 @@ src/classroom_vision/api 只做输入输出与内部身份校验，domain 定义
 
 禁止连接 Java 业务 MySQL；只接受 asset_id，不接受用户提供的绝对路径或任意远程 URL。模型在 lifespan 加载，真实推理按硬件有界执行。不能把关键点分数当行为准确率，不能将重复检测次数当学生人数。
 
-开发凭据不可作为生产节点认证。当前生产模式明确拒绝启动，直到独立节点 mTLS 与真实模型落地。禁止为了让健康检查变绿而返回伪造模型状态。
+开发凭据不可作为生产节点认证。当前生产模式明确拒绝启动，直到独立节点 mTLS 与生产验收完成。已加载通用ONNX权重不代表课堂精度验收。禁止为了让健康检查变绿而返回伪造模型状态。
 
 在 fastapi 使用 `uv sync --frozen`、`uv run ruff check .`、`uv run ruff format --check .`、`uv run pytest`。Python 包和环境只在本模块。注释和文档字符串全部中文。

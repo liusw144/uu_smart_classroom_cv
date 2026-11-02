@@ -15,6 +15,7 @@
 | Axios | 1.21.0 | MIT，见安装包及[上游](https://github.com/axios/axios) |
 | Vite、Vue 插件、vue-tsc、Vitest、Prettier | 见 frontend/package-lock.json | MIT，见相应安装包许可 |
 | TypeScript | 5.9.3 | Apache-2.0，见安装包及[上游](https://github.com/microsoft/TypeScript) |
+| Playwright | 1.62.1 | Apache-2.0，见安装包及[上游](https://github.com/microsoft/playwright)；仅作浏览器验收工具 |
 | FastAPI | 0.162.0 | MIT，见安装包及[上游](https://github.com/fastapi/fastapi) |
 | Uvicorn | 0.54.0 | BSD-3-Clause，见安装包及[上游](https://github.com/encode/uvicorn) |
 | Pydantic、Pydantic Settings | 见 fastapi/uv.lock | MIT，见相应安装包许可 |
@@ -38,4 +39,10 @@ Compose 和 Dockerfile 引用的 MySQL、Redis、JDK、Node、Python 与 Nginx �
 
 ## 模型与课堂数据
 
-当前仓库没有提供 YOLOX、RTMPose 权重、训练数据或课堂录像。今后接入时，代码、权重和数据集分别登记来源、哈希与许可，完成检查后再决定是否分发。不得将学生素材、可识别身份的信息或未经授权的图片作为公开测试数据提交。
+源码仓库不分发权重、训练数据或课堂录像。已在本机runtime目录下载YOLOX-tiny、RTMPose-s、Qwen3-0.6B GGUF、llama.cpp CPU运行时及上游演示素材；这些文件被Git忽略。来源、体积及SHA256见models/demo-assets.lock.json，运行方法见docs/guides/真实模型本机演示指南.md。
+
+YOLOX、MMPose、RTMLib的仓库代码分别遵循其上游Apache-2.0许可；模型权重和训练数据的授权须独立检查。Qwen官方GGUF页面声明Apache-2.0；llama.cpp为MIT。上游视频/图片仅用于本机验证，不因位于开源仓库就声明取得本项目Apache再分发许可。本次公开文档不附这些原始媒体。
+
+视觉新增依赖：RTMLib 0.0.15、ONNX Runtime 1.31.1、OpenCV Python及Contrib 4.14.0.94、NumPy 2.5.4；实际版本以fastapi/uv.lock为准。edge独立依赖HTTPX、jsonschema，版本见edge/uv.lock。依赖包附带的LICENSE/NOTICE应随实际发行物收集。FFmpeg使用本机已有可执行程序，不随源码嵌入其二进制；发布其二进制前需按具体构建选项核对许可。
+
+不得将学生素材、可识别身份的信息或未经授权的图片作为公开测试数据提交。

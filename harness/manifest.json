@@ -1,20 +1,51 @@
 {
   "schema_version": 1,
   "project": "uu_smart_classroom_cv",
-  "stage": "foundation",
+  "stage": "local_real_model_demo",
   "language": "zh-CN",
   "modules": {
-    "backend": {"build": "mvn -B verify", "runtime": "Java 21", "entry": "backend/README.md"},
-    "frontend": {"build": "npm ci && npm run verify", "runtime": "Node 22.18.0", "entry": "frontend/README.md"},
-    "fastapi": {"build": "uv sync --frozen && uv run ruff check . && uv run pytest", "runtime": "Python 3.12", "entry": "fastapi/README.md"}
+    "backend": {
+      "build": "mvn -B verify",
+      "runtime": "Java 21",
+      "entry": "backend/README.md"
+    },
+    "frontend": {
+      "build": "npm ci && npm run verify",
+      "runtime": "Node 22.18.0",
+      "entry": "frontend/README.md"
+    },
+    "fastapi": {
+      "build": "uv sync --frozen && uv run ruff check . && uv run pytest",
+      "runtime": "Python 3.12",
+      "entry": "fastapi/README.md"
+    },
+    "edge": {
+      "build": "uv sync --frozen && uv run ruff check . && uv run pytest",
+      "runtime": "Python 3.12",
+      "entry": "edge/README.md"
+    }
   },
-  "context": ["AGENTS.md", "docs/architecture/overview.md", "docs/project-status.md"],
-  "gates": {"structure": "python scripts/quality_gate.py", "tests": "python -m unittest discover -s tests -v", "production": "python scripts/quality_gate.py --production"},
-  "contracts": ["contracts/business.openapi.json", "contracts/vision.openapi.json", "contracts/detection-request.schema.json"],
+  "context": [
+    "AGENTS.md",
+    "docs/architecture/overview.md",
+    "docs/project-status.md"
+  ],
+  "gates": {
+    "structure": "python scripts/quality_gate.py",
+    "tests": "python -m unittest discover -s tests -v",
+    "production": "python scripts/quality_gate.py --production"
+  },
+  "contracts": [
+    "contracts/business.openapi.json",
+    "contracts/vision.openapi.json",
+    "contracts/detection-request.schema.json",
+    "contracts/edge-lease.schema.json"
+  ],
   "production_blockers": [
-    "真实模型及行为规则尚未接入与评测",
-    "教学业务、持久作业及边缘节点协议未完成",
-    "生产节点 mTLS、登录限流及审计未完成",
-    "四模式部署、数据库恢复及容量验收未完成"
+    "通用人物姿态模型已本机运行，课堂标注精度和行为规则尚未评测",
+    "本机开发节点令牌不能代替生产mTLS、证书轮换和登录限流",
+    "边缘短时离线已验证，长期断网、磁盘配额、保留期及批量容量尚未验收",
+    "可信生产证据验证器未实现，生产门禁始终拒绝放行",
+    "四模式安装、混合云原始素材留校、数据库恢复与多节点容量验收未完成"
   ]
 }

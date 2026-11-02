@@ -1,0 +1,44 @@
+[
+  {
+    "id": "UI01",
+    "name": "教师登录后显示学校身份",
+    "status": "passed",
+    "scope": "真实浏览器＋受控 API fixture，不代表 Java/数据库端到端"
+  },
+  {
+    "id": "UI02",
+    "name": "管理员登录后显示学校身份",
+    "status": "passed",
+    "scope": "真实浏览器＋受控 API fixture，不代表 Java/数据库端到端"
+  },
+  {
+    "id": "UI03",
+    "name": "教师不能进入管理界面",
+    "status": "passed",
+    "scope": "真实浏览器＋受控 API fixture，不代表 Java/数据库端到端"
+  },
+  {
+    "id": "UI04",
+    "name": "登录失败显示反馈并清空密码",
+    "status": "passed",
+    "scope": "真实浏览器＋受控 API fixture，不代表 Java/数据库端到端"
+  },
+  {
+    "id": "UI05",
+    "name": "退出时发送凭据并回到登录页",
+    "status": "passed",
+    "scope": "真实浏览器＋受控 API fixture，不代表 Java/数据库端到端"
+  },
+  {
+    "id": "UI06",
+    "name": "远端退出失败时清理本地界面",
+    "status": "passed",
+    "scope": "真实浏览器＋受控 API fixture，不代表 Java/数据库端到端"
+  },
+  {
+    "id": "UI07",
+    "name": "刷新不会保留内存令牌",
+    "status": "passed",
+    "scope": "真实浏览器＋受控 API fixture，不代表 Java/数据库端到端"
+  }
+]

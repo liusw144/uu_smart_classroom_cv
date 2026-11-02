@@ -1,0 +1,27 @@
+[
+  {
+    "service": "teacher",
+    "url": "http://127.0.0.1:5173/",
+    "status": 200
+  },
+  {
+    "service": "admin",
+    "url": "http://127.0.0.1:5172/",
+    "status": 200
+  },
+  {
+    "service": "business",
+    "url": "http://127.0.0.1:8089/health/live",
+    "status": 200
+  },
+  {
+    "service": "database_and_redis",
+    "url": "http://127.0.0.1:8089/actuator/health/readiness",
+    "status": 200
+  },
+  {
+    "service": "vision_unavailable",
+    "url": "http://127.0.0.1:5000/health/ready",
+    "status": 503
+  }
+]

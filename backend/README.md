@@ -16,6 +16,6 @@ java -jar api/target/classroom-api-0.1.0-SNAPSHOT.jar --spring.profiles.active=d
 
 本地首次创建管理员时显式设置 BOOTSTRAP_ENABLED=true 与 12 至 64 字符的 BOOTSTRAP_PASSWORD；学校代码 local-school，账号 admin。密码无默认值，首次创建后关闭初始化；已有账号不会被重置。生产禁止启用该功能。
 
-`GET /health/live` 仅代表进程运行；`GET /actuator/health/readiness` 同时检查数据库与 Redis。当前接口为登录、查询当前身份和退出；教学业务未完成。登录限流、完整操作审计与生产初始化是上线前阻塞任务。
+`GET /health/live` 仅代表进程运行；`GET /actuator/health/readiness` 同时检查数据库与 Redis。当前已实现本校账号、个人资料/头像/改密、教务CRUD、公告、目录档案、素材、失败作业和教务模板报告。接口见contracts/business.openapi.json。登录限流、完整安全审计、真实推理与生产初始化仍是上线前阻塞。
 
-集成测试：配置独立 MySQL 8.4 与 Redis 后运行 `mvn -s .mvn/settings.xml -B -Pintegration verify`。不要针对生产库运行。当前 unit 构建通过不代表数据库联调已通过。
+本机使用项目根目录的 `python scripts/local_dev.py init`、`build`、`test`、`backend` 子命令自动注入对应专用账号和环境。集成测试只接受显式配置的 `uu_classroom_test`，不要针对业务库运行；仅单元构建通过不能替代数据库联调。运行与本次实际证据见docs/guides/本机最小版本运行指南.md及docs/qa/local-mvp-verification-2026-11-02.md（路径相对项目根目录）。

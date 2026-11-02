@@ -3,16 +3,24 @@ import { ref } from 'vue'
 import { createApi } from './api'
 import type { User } from './api'
 import { createSession } from './session'
+import Workspace from './Workspace.vue'
+import { displayValue } from './features/resources'
 
 const props = defineProps<{ audience: 'teacher' | 'admin' }>()
-const session = createSession()
+const user = ref<User>()
+const session = createSession(() => {
+  user.value = undefined
+})
 const api = createApi(session)
 const school = ref('')
 const username = ref('')
 const password = ref('')
-const user = ref<User>()
 const busy = ref(false)
 const error = ref('')
+function reauthenticate() {
+  session.clear()
+  error.value = '密码已更新，请重新登录。'
+}
 
 async function login() {
   busy.value = true
@@ -52,9 +60,9 @@ async function logout() {
 </script>
 
 <template>
-  <main class="shell">
-    <header><span class="brand">慧课 · UU</span><span class="stage">工程基础</span></header>
-    <section class="intro">
+  <main class="shell" :class="{ connected: user }">
+    <header><span class="brand">慧课 · UU</span><span class="stage">本机最小业务版本</span></header>
+    <section class="intro" v-if="!user">
       <p class="eyebrow">课堂行为检测与分析</p>
       <h1>{{ audience === 'teacher' ? '教师工作台' : '学校管理台' }}</h1>
       <p>围绕课堂任务，连接教学数据与校内视觉分析。</p>
@@ -90,18 +98,24 @@ async function logout() {
         <button :disabled="busy" type="submit">{{ busy ? '正在登录…' : '登录' }}</button>
       </form>
     </section>
-    <section v-else class="panel">
+    <section v-else class="identity-bar">
       <h2>{{ user.username }}，已连接学校空间</h2>
       <dl>
         <dt>学校编号</dt>
         <dd>{{ user.tenant_id }}</dd>
         <dt>角色</dt>
-        <dd>{{ user.role }}</dd>
+        <dd>{{ displayValue(user.role) }}</dd>
       </dl>
-      <p>登录基础已接入；课堂任务与视觉分析功能将在后续阶段交付。</p>
       <button :disabled="busy" @click="logout">退出登录</button>
     </section>
     <p v-if="error" class="error" role="alert">{{ error }}</p>
-    <footer>当前版本为工程基础。尚未接入真实检测模型，不能用于正式课堂分析。</footer>
+    <Workspace
+      v-if="user"
+      :api="api"
+      :user="user"
+      :audience="audience"
+      @reauthenticate="reauthenticate"
+    />
+    <footer>当前为本机验证版本，课堂标注精度、生产节点认证和部署容量尚未验收。</footer>
   </main>
 </template>

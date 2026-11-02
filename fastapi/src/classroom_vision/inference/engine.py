@@ -3,6 +3,10 @@ from typing import Protocol
 from classroom_vision.domain.models import DetectionRequest
 
 
+class InferenceBusy(RuntimeError):
+    pass
+
+
 class ModelUnavailable(RuntimeError):
     pass
 

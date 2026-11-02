@@ -41,6 +41,24 @@ class QualityGateTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             self.assertTrue(self.module.production_errors(Path(directory)))
 
+    def test_domain_fully_qualified_framework_type_is_rejected(self):
+        self.assertTrue(self.scan_file("backend/domain/src/main/java/Bad.java", "class Bad { org.springframework.context.ApplicationContext value; }"))
+
+    def test_hashes_and_empty_blocker_list_cannot_authorize_production(self):
+        import hashlib
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            (root/"harness").mkdir()
+            (root/"harness/manifest.json").write_text(json.dumps({"production_blockers":[]}),encoding="utf-8")
+            entries={}
+            for name in ["model","tenant_isolation","recovery","capacity","deployment","approval"]:
+                target=root/(name+".txt")
+                target.write_text("未执行的占位材料",encoding="utf-8")
+                entries[name]={"path":target.name,"sha256":hashlib.sha256(target.read_bytes()).hexdigest()}
+            (root/"harness/release-evidence.json").write_text(json.dumps(entries),encoding="utf-8")
+            self.assertTrue(self.module.production_errors(root))
+
     def test_yaml_jdbc_url_is_not_a_comment(self):
         errors = self.scan_file("deploy/config.yaml", "url: jdbc:mysql://127.0.0.1:3306/classroom\n")
         self.assertEqual([], errors)

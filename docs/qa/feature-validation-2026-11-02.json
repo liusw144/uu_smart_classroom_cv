@@ -1,0 +1,502 @@
+{
+  "schema_version": 1,
+  "assessed_at": "2026-11-02",
+  "assessed_commit": "b4762b0cdadc1e1a6fca3bb4958e1a9dfa85c621",
+  "scope": "当前本地工作树与该提交的已实现路径；不是完整产品成功验收或生产认证。",
+  "working_tree_note": "审核前CI文件已暂存删除，fastapi/.python-version显示修改；均保留用户状态。",
+  "production_ready": false,
+  "status_definitions": {
+    "partial": "仅实现及验证部分条件，不能视为完整通过",
+    "not_implemented": "无完整业务实现，未执行成功功能验收",
+    "unverified": "实现存在但因环境或证据不足未确认"
+  },
+  "features": [
+    {
+      "id": "C01",
+      "title": "教师登录",
+      "status": "partial",
+      "source": "docs/reference/sources/requirements.md:71",
+      "observation": "已有登录、会话和失败反馈；真实教师账号管理、完整教师首页及限流未完成。",
+      "evidence_ids": [
+        "BASELINE",
+        "UI01",
+        "UI04",
+        "UI05",
+        "UI06",
+        "UI07",
+        "JAVA_BOUNDARIES",
+        "REMOTE_AUTH_IT"
+      ]
+    },
+    {
+      "id": "C02",
+      "title": "管理员登录",
+      "status": "partial",
+      "source": "docs/reference/sources/requirements.md:79",
+      "observation": "已有独立管理入口及教师角色拦截；管理概览、账户维护及完整动作授权未完成。",
+      "evidence_ids": [
+        "BASELINE",
+        "UI02",
+        "UI03",
+        "REMOTE_AUTH_IT"
+      ]
+    },
+    {
+      "id": "C03",
+      "title": "认证与资源归属",
+      "status": "partial",
+      "source": "docs/reference/sources/requirements.md:85",
+      "observation": "已有租户身份、Sa-Token、BCrypt及领域归属规则；缺少教学资源，不能证明业务查询、素材及异步回调隔离。",
+      "evidence_ids": [
+        "BASELINE",
+        "JAVA_BOUNDARIES",
+        "REMOTE_AUTH_IT"
+      ]
+    },
+    {
+      "id": "C04",
+      "title": "文件与头像",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:91",
+      "observation": "没有素材上传、头像存储及访问授权接口。",
+      "evidence_ids": []
+    },
+    {
+      "id": "T01",
+      "title": "教师工作台",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:99",
+      "observation": "没有工作台统计、趋势图及检测快捷业务。",
+      "evidence_ids": []
+    },
+    {
+      "id": "T02",
+      "title": "班级管理",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:107",
+      "observation": "没有班级业务表、接口和页面。",
+      "evidence_ids": []
+    },
+    {
+      "id": "T03",
+      "title": "课程管理",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:113",
+      "observation": "没有课程及班级关联业务。",
+      "evidence_ids": []
+    },
+    {
+      "id": "T04",
+      "title": "课堂任务",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:119",
+      "observation": "没有课堂任务及引用删除约束。",
+      "evidence_ids": []
+    },
+    {
+      "id": "T05",
+      "title": "行为检测",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:127",
+      "observation": "只有内部检测请求边界；模型未加载且返回503，图片、批量、视频、摄像头均无成功业务闭环。",
+      "evidence_ids": []
+    },
+    {
+      "id": "T06",
+      "title": "检测记录",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:137",
+      "observation": "没有检测记录持久化、筛选、详情和删除。",
+      "evidence_ids": []
+    },
+    {
+      "id": "T07",
+      "title": "课堂统计",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:151",
+      "observation": "没有统计计算、聚合接口及图表。",
+      "evidence_ids": []
+    },
+    {
+      "id": "T08",
+      "title": "AI课堂分析",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:161",
+      "observation": "没有AI或本地模板分析及来源记录。",
+      "evidence_ids": []
+    },
+    {
+      "id": "T09",
+      "title": "分析报告",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:171",
+      "observation": "没有报告存储、管理及PDF导出。",
+      "evidence_ids": []
+    },
+    {
+      "id": "T10",
+      "title": "教学公告",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:179",
+      "observation": "没有公告查询与可见性业务。",
+      "evidence_ids": []
+    },
+    {
+      "id": "T11",
+      "title": "个人中心",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:185",
+      "observation": "当前身份显示不等于个人中心；没有资料、改密及头像更新业务。",
+      "evidence_ids": []
+    },
+    {
+      "id": "A01",
+      "title": "数据概览",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:193",
+      "observation": "没有运营概览及指标计算。",
+      "evidence_ids": []
+    },
+    {
+      "id": "A02",
+      "title": "用户管理",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:201",
+      "observation": "只有开发初始化账号；没有用户增改、停用管理页面和完整审计。",
+      "evidence_ids": []
+    },
+    {
+      "id": "A03",
+      "title": "操作日志",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:209",
+      "observation": "请求标识不等于操作日志；没有日志存储和查询。",
+      "evidence_ids": []
+    },
+    {
+      "id": "A04",
+      "title": "班级管理",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:215",
+      "observation": "没有管理端班级管理。",
+      "evidence_ids": []
+    },
+    {
+      "id": "A05",
+      "title": "课程管理",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:221",
+      "observation": "没有管理端课程管理。",
+      "evidence_ids": []
+    },
+    {
+      "id": "A06",
+      "title": "检测任务",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:229",
+      "observation": "没有检测任务管理。",
+      "evidence_ids": []
+    },
+    {
+      "id": "A07",
+      "title": "检测记录",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:235",
+      "observation": "没有跨状态记录筛选、详情及图片查看。",
+      "evidence_ids": []
+    },
+    {
+      "id": "A08",
+      "title": "模型权重",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:247",
+      "observation": "没有模型权重注册、校验、版本及启停管理。",
+      "evidence_ids": []
+    },
+    {
+      "id": "A09",
+      "title": "行为类别",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:255",
+      "observation": "没有类别维护及引用保护。",
+      "evidence_ids": []
+    },
+    {
+      "id": "A10",
+      "title": "分析报告",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:265",
+      "observation": "没有管理端报告业务。",
+      "evidence_ids": []
+    },
+    {
+      "id": "A11",
+      "title": "AI模型配置",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:275",
+      "observation": "没有AI连接配置、测试及默认项管理。",
+      "evidence_ids": []
+    },
+    {
+      "id": "A12",
+      "title": "公告管理",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:283",
+      "observation": "没有公告发布、下架及可见性管理。",
+      "evidence_ids": []
+    },
+    {
+      "id": "A13",
+      "title": "个人中心",
+      "status": "not_implemented",
+      "source": "docs/reference/sources/requirements.md:289",
+      "observation": "没有管理端个人资料维护。",
+      "evidence_ids": []
+    }
+  ],
+  "original_acceptance": [
+    {
+      "id": "AC01",
+      "title": "教师与管理员登录",
+      "source_condition": "进入各自首页 账号停用后无法登录",
+      "status": "partial",
+      "observation": "登录及停用会话存在测试；真实双端业务首页未完成。",
+      "source": "docs/reference/sources/requirements.md:493"
+    },
+    {
+      "id": "AC02",
+      "title": "跨角色及跨教师访问",
+      "source_condition": "管理接口限制角色 教师间受限数据不可互访",
+      "status": "partial",
+      "observation": "身份及领域隔离有测试；完整教学资源、素材和结果的跨租户端到端测试尚不存在。",
+      "source": "docs/reference/sources/requirements.md:494"
+    },
+    {
+      "id": "AC03",
+      "title": "教学数据关联",
+      "source_condition": "班级可关联课程 任务的教师及班级由课程确定",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:495"
+    },
+    {
+      "id": "AC04",
+      "title": "任务删除限制",
+      "source_condition": "有检测记录引用的任务删除被拒绝",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:496"
+    },
+    {
+      "id": "AC05",
+      "title": "图片与批量图片检测",
+      "source_condition": "可提交素材并查看对应标注结果和类别统计",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:497"
+    },
+    {
+      "id": "AC06",
+      "title": "视频检测",
+      "source_condition": "可播放结果 并查看采样帧趋势及相关采样信息",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:498"
+    },
+    {
+      "id": "AC07",
+      "title": "摄像头实时检测",
+      "source_condition": "可进行实时检测 结束保存后能查到记录",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:499"
+    },
+    {
+      "id": "AC08",
+      "title": "教师检测记录",
+      "source_condition": "各筛选条件生效 详情与所选记录一致 可发起分析及删除",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:500"
+    },
+    {
+      "id": "AC09",
+      "title": "管理端检测记录",
+      "source_condition": "支持状态等组合筛选 图片可放大 记录参数可查看",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:501"
+    },
+    {
+      "id": "AC10",
+      "title": "统计口径",
+      "source_condition": "图表基于检测统计 不将重复目标次数等同于课堂人数",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:502"
+    },
+    {
+      "id": "AC11",
+      "title": "AI与本地模板分析",
+      "source_condition": "成功记录可生成分析 并保存内容与分析来源",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:503"
+    },
+    {
+      "id": "AC12",
+      "title": "报告管理与导出",
+      "source_condition": "标题筛选 详情与删除有效 教师PDF含编号 时间及正文",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:504"
+    },
+    {
+      "id": "AC13",
+      "title": "模型与类别配置",
+      "source_condition": "配置可维护 被引用类别不能删除 档案与识别能力边界明确",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:505"
+    },
+    {
+      "id": "AC14",
+      "title": "AI配置",
+      "source_condition": "可测试接口并设默认 教师能够使用默认分析方式",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:506"
+    },
+    {
+      "id": "AC15",
+      "title": "公告发布与下架",
+      "source_condition": "教师可见性与发布状态一致",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:507"
+    },
+    {
+      "id": "AC16",
+      "title": "用户资料与密码",
+      "source_condition": "用户查询编辑有效 已有账号只读 头像同步 教师改密验证原密码",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:508"
+    },
+    {
+      "id": "AC17",
+      "title": "概览与操作日志",
+      "source_condition": "汇总与记录来源一致 日志可查询人员 模块和时间",
+      "status": "not_implemented",
+      "observation": "缺少对应业务实现，无法执行成功验收。",
+      "source": "docs/reference/sources/requirements.md:509"
+    },
+    {
+      "id": "AC18",
+      "title": "服务与文件联通",
+      "source_condition": "两前端可访问后端 检测结果写入共享upload路径并可读取",
+      "status": "partial",
+      "observation": "已有模块及接口基础；原共享upload要求已由批准的混合云asset_id及校内存储域设计替代，新方案完整媒体联通未实现。",
+      "source": "docs/reference/sources/requirements.md:510"
+    }
+  ],
+  "hybrid_requirements": [
+    {
+      "id": "H01",
+      "title": "前端、Java、FastAPI独立模块",
+      "status": "partial",
+      "observation": "目录、依赖和构建隔离已建立；实际全链路容器部署未验证。"
+    },
+    {
+      "id": "H02",
+      "title": "租户业务、素材与回调隔离",
+      "status": "not_implemented",
+      "observation": "身份层仅为部分基础；业务资源、对象存储及回调均未完成。"
+    },
+    {
+      "id": "H03",
+      "title": "节点注册、mTLS及撤销轮换",
+      "status": "not_implemented",
+      "observation": "只有开发内部Bearer凭据；production配置主动拒绝启动。"
+    },
+    {
+      "id": "H04",
+      "title": "持久作业、租约及幂等结果",
+      "status": "not_implemented",
+      "observation": "没有作业表、领取、重试、取消或旧attempt防覆盖。"
+    },
+    {
+      "id": "H05",
+      "title": "断网Outbox和重连恢复",
+      "status": "not_implemented",
+      "observation": "没有边缘Agent及持久Outbox。"
+    },
+    {
+      "id": "H06",
+      "title": "真实模型及课堂标注评测",
+      "status": "not_implemented",
+      "observation": "UnavailableEngine明确不可用；没有真实权重、标注集和准确率证据。"
+    },
+    {
+      "id": "H07",
+      "title": "四模式部署、升级及恢复",
+      "status": "not_implemented",
+      "observation": "只有开发Compose及设计说明；不能据此确认单机、私有、云端、混合云生产可用。"
+    },
+    {
+      "id": "H08",
+      "title": "容量、素材保留期和可观测性",
+      "status": "not_implemented",
+      "observation": "没有目标硬件基准、保留期清理闭环和完整告警恢复验收。"
+    }
+  ],
+  "test_runs": [
+    {
+      "id": "BASELINE",
+      "scope": "根门禁、单元测试、编译、格式、类型与构建",
+      "tests": 26,
+      "passed": 26,
+      "failed": 0,
+      "evidence": "evidence/baseline.log"
+    },
+    {
+      "id": "RUNTIME_EXTENDED",
+      "scope": "实际FastAPI TestClient与临时目录Harness反例",
+      "tests": 22,
+      "failures": 6,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 16,
+      "evidence": "evidence/runtime-audit.xml"
+    },
+    {
+      "id": "UI_FIXTURE",
+      "scope": "真实Chrome和真实Vite页面；API响应受控，非真实Java/数据库E2E",
+      "tests": 7,
+      "passed": 7,
+      "failed": 0,
+      "evidence": "evidence/browser-results.json"
+    },
+    {
+      "id": "JAVA_BOUNDARIES",
+      "scope": "LoginService方法与BCrypt边界，内存仓储，非SQL及容量测试",
+      "tests": 5,
+      "passed": 5,
+      "failed": 0,
+      "evidence": "evidence/java-boundaries.log"
+    },
+    {
+      "id": "REMOTE_AUTH_IT",
+      "scope": "既有GitHub CI的隔离MySQL/Redis集成步骤，API查询确认成功；本机未重跑",
+      "status": "remote_ci_step_passed",
+      "url": "https://github.com/liusw144/uu_smart_classroom_cv/actions/runs/41349138321"
+    }
+  ],
+  "unverified": [
+    "本机真实数据库与容器联调",
+    "浏览器至真实Java/MySQL/Redis端到端",
+    "任何真实模型精度或GPU容量",
+    "媒体成功检测全流程",
+    "四模式部署与断网恢复"
+  ]
+}

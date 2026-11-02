@@ -4,6 +4,7 @@ import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.exception.NotPermissionException;
 import cn.dev33.satoken.exception.NotRoleException;
 import cn.uusmart.classroom.application.AuthenticationFailed;
+import cn.uusmart.classroom.application.ResourceProblem;
 import cn.uusmart.classroom.domain.AccessDenied;
 import java.util.Map;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,30 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ExceptionAdvice {
+  @ExceptionHandler(cn.uusmart.classroom.application.ServiceUnavailable.class)
+  ResponseEntity<?> unavailable(cn.uusmart.classroom.application.ServiceUnavailable error) {
+    return response(503, "SERVICE_UNAVAILABLE", error.getMessage());
+  }
+
+  @ExceptionHandler(ResourceProblem.class)
+  ResponseEntity<?> resource(ResourceProblem error) {
+    return switch (error.kind()) {
+      case NOT_FOUND -> response(404, "NOT_FOUND", error.getMessage());
+      case CONFLICT -> response(409, "CONFLICT", error.getMessage());
+      case INVALID -> response(400, "INVALID_REQUEST", error.getMessage());
+    };
+  }
+
+  @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+  ResponseEntity<?> conflict(Exception error) {
+    return response(409, "CONFLICT", "数据已存在或仍被其他记录引用，请先处理关联关系");
+  }
+
+  @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+  ResponseEntity<?> notFound(Exception error) {
+    return response(404, "NOT_FOUND", "资源不存在");
+  }
+
   @ExceptionHandler({NotLoginException.class, AuthenticationFailed.class})
   ResponseEntity<?> unauthorized(Exception error) {
     return response(401, "UNAUTHORIZED", "身份无效或已过期");
@@ -31,9 +56,21 @@ public class ExceptionAdvice {
     return response(400, "INVALID_REQUEST", "请求字段或格式无效");
   }
 
+  @ExceptionHandler({
+    org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+    org.springframework.web.multipart.MultipartException.class
+  })
+  ResponseEntity<?> invalidParameter(Exception error) {
+    return response(400, "INVALID_REQUEST", "请求参数或文件格式无效");
+  }
+
   @ExceptionHandler(Exception.class)
   ResponseEntity<?> unexpected(Exception error) {
-    LoggerFactory.getLogger(getClass()).error("请求处理失败，异常类型 {}", error.getClass().getName());
+    LoggerFactory.getLogger(getClass())
+        .error(
+            "请求处理失败，异常类型 {}，调用位置 {}",
+            error.getClass().getName(),
+            java.util.Arrays.toString(error.getStackTrace()));
     return response(500, "INTERNAL_ERROR", "服务暂时不可用，请提供请求编号排查");
   }
 

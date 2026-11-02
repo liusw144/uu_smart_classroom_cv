@@ -15,6 +15,7 @@
     "build": "npm run build -w @uu/teacher && npm run build -w @uu/admin",
     "typecheck": "vue-tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
+    "test:e2e": "node e2e/local-mvp.cjs",
     "verify": "npm run format:check && npm run typecheck && npm test && npm run build",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "6.0.10",
+    "playwright": "1.62.1",
     "prettier": "3.9.10",
     "typescript": "~5.9.3",
     "vite": "8.3.5",

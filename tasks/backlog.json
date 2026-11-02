@@ -1,17 +1,116 @@
 {
   "schema_version": 1,
   "tasks": [
-    {"id":"M0-FOUNDATION","title":"独立模块与 Harness 工程基础","status":"implemented","depends_on":[]},
-    {"id":"M1-IDENTITY","title":"生产登录限流、初始化、权限变更与完整审计","status":"todo","depends_on":["M0-FOUNDATION"]},
-    {"id":"M1-TEACHING","title":"学校隔离的班级、课程和课堂任务","status":"todo","depends_on":["M1-IDENTITY"]},
-    {"id":"M1-JOBS","title":"持久作业、租约、取消、重试和结果幂等","status":"todo","depends_on":["M1-TEACHING"]},
-    {"id":"M1-ASSETS","title":"素材 ID、存储域、授权访问与保留期","status":"todo","depends_on":["M1-TEACHING"]},
-    {"id":"M1-EDGE","title":"节点注册、mTLS、出站 Agent 与离线 Outbox","status":"todo","depends_on":["M1-JOBS"]},
-    {"id":"M1-MODELS","title":"真实模型、关键点解码、规则与课堂标注评测","status":"todo","depends_on":["M1-ASSETS"]},
-    {"id":"M1-IMAGE","title":"真实图片检测完整闭环","status":"todo","depends_on":["M1-EDGE","M1-MODELS"]},
-    {"id":"M2-VIDEO","title":"视频、批量、摄像头、背压及容量基准","status":"todo","depends_on":["M1-IMAGE"]},
-    {"id":"M2-REPORTS","title":"统计口径、模板、AI 适配及 PDF 报告","status":"todo","depends_on":["M1-IMAGE"]},
-    {"id":"M3-DEPLOY","title":"四模式安装、升级、恢复及证书轮换","status":"todo","depends_on":["M2-VIDEO","M2-REPORTS"]},
-    {"id":"M4-PRODUCTION","title":"真实容量、算法、隔离与回滚验收","status":"todo","depends_on":["M3-DEPLOY"]}
-  ]
+    {
+      "id": "M0-FOUNDATION",
+      "title": "独立模块与 Harness 工程基础",
+      "status": "implemented",
+      "depends_on": []
+    },
+    {
+      "id": "M1-IDENTITY",
+      "title": "生产登录限流、初始化、权限变更与完整审计",
+      "status": "partial",
+      "depends_on": [
+        "M0-FOUNDATION"
+      ],
+      "local_delivery_note": "本校账号、资料、改密和请求审计已实现；生产限流及完整安全审计未完成。"
+    },
+    {
+      "id": "M1-TEACHING",
+      "title": "学校隔离的班级、课程和课堂任务",
+      "status": "implemented_local",
+      "depends_on": [
+        "M1-IDENTITY"
+      ],
+      "local_delivery_note": "本机教务CRUD、归属隔离及引用保护验收通过。"
+    },
+    {
+      "id": "M1-JOBS",
+      "title": "持久作业、租约、取消、重试和结果幂等",
+      "status": "implemented_local",
+      "depends_on": [
+        "M1-TEACHING"
+      ],
+      "local_delivery_note": "MySQL持久作业、600秒租约、最多3次发放、取消、结果幂等及校验已本机验证。"
+    },
+    {
+      "id": "M1-ASSETS",
+      "title": "素材 ID、存储域、授权访问与保留期",
+      "status": "partial",
+      "depends_on": [
+        "M1-TEACHING"
+      ],
+      "local_delivery_note": "本机PNG/JPEG/MP4素材ID、授权存储及引用保护；自动保留期待实现。"
+    },
+    {
+      "id": "M1-EDGE",
+      "title": "节点注册、mTLS、出站 Agent 与离线 Outbox",
+      "status": "partial",
+      "depends_on": [
+        "M1-JOBS"
+      ],
+      "local_delivery_note": "独立出站Agent和SQLite Outbox短时断网/进程重启/重连已验证；生产mTLS、长期续租未实现。"
+    },
+    {
+      "id": "M1-MODELS",
+      "title": "真实模型、关键点解码、规则与课堂标注评测",
+      "status": "partial",
+      "depends_on": [
+        "M1-ASSETS"
+      ],
+      "local_delivery_note": "锁定YOLOX-tiny和RTMPose-s ONNX真实CPU推理及17点姿态；课堂标注评测待完成。"
+    },
+    {
+      "id": "M1-IMAGE",
+      "title": "真实图片检测完整闭环",
+      "status": "implemented_local",
+      "depends_on": [
+        "M1-EDGE",
+        "M1-MODELS"
+      ],
+      "local_delivery_note": "实际图片、标注图、统计、授权访问及边缘闭环已本机验证。"
+    },
+    {
+      "id": "M2-VIDEO",
+      "title": "视频、批量、摄像头、背压及容量基准",
+      "status": "partial",
+      "depends_on": [
+        "M1-IMAGE"
+      ],
+      "local_delivery_note": "短MP4采样和浏览器摄像头最多5帧已实现；公开视频虚拟设备已测，实体摄像头、RTSP、批量与容量未测。"
+    },
+    {
+      "id": "M2-REPORTS",
+      "title": "统计口径、模板、AI 适配及 PDF 报告",
+      "status": "partial",
+      "depends_on": [
+        "M1-IMAGE"
+      ],
+      "local_delivery_note": "结构化视觉统计、本地Qwen3辅助报告、教务模板与打印PDF已实现；小模型文字需人工核对。"
+    },
+    {
+      "id": "M3-DEPLOY",
+      "title": "四模式安装、升级、恢复及证书轮换",
+      "status": "todo",
+      "depends_on": [
+        "M2-VIDEO",
+        "M2-REPORTS"
+      ]
+    },
+    {
+      "id": "M4-PRODUCTION",
+      "title": "真实容量、算法、隔离与回滚验收",
+      "status": "todo",
+      "depends_on": [
+        "M3-DEPLOY"
+      ]
+    }
+  ],
+  "status_definitions": {
+    "implemented": "工程基础已交付",
+    "implemented_local": "本机最小范围验收通过，非生产验收",
+    "partial": "仅交付部分能力，不能视为完整任务完成",
+    "todo": "尚待实现"
+  }
 }

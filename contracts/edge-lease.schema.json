@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "asset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "lease_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "lease_expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "model_version": {
+      "type": "string"
+    },
+    "media_kind": {
+      "enum": [
+        "IMAGE",
+        "VIDEO",
+        "CAMERA"
+      ]
+    },
+    "filename": {
+      "type": "string"
+    },
+    "content_type": {
+      "enum": [
+        "image/png",
+        "image/jpeg",
+        "video/mp4"
+      ]
+    },
+    "size": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "required": [
+    "job_id",
+    "asset_id",
+    "lease_id",
+    "attempt",
+    "lease_expires_at",
+    "input_sha256",
+    "model_version",
+    "media_kind",
+    "filename",
+    "content_type",
+    "size"
+  ]
+}
