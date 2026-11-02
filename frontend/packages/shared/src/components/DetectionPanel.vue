@@ -131,7 +131,7 @@ async function startCamera() {
   <section class="workspace-panel">
     <h2>视觉检测</h2>
     <p>
-      图片支持PNG/JPEG，最多10MB；视频支持MP4，最多32MB、30秒。每250毫秒采样，最多32帧。摄像头每轮最多5帧，逐帧执行作业。
+      图片支持PNG/JPEG，最多10MB；视频支持MP4，最多32MB、30秒。短片按250毫秒采样，长片均匀覆盖全片，最多32帧并包含尾帧。摄像头每轮最多5帧，逐帧执行作业。
     </p>
     <p>
       {{

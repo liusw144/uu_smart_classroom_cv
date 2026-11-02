@@ -83,12 +83,12 @@ public class EdgeNodeController {
   }
 
   @PostMapping("/jobs/{job}/heartbeat")
-  public ApiResponse<Boolean> heartbeat(
+  public ApiResponse<JobLease> heartbeat(
       @PathVariable UUID job,
       @RequestHeader(value = "X-Node-ID", required = false) String id,
       @RequestHeader(value = "Authorization", required = false) String authorization,
       @RequestHeader(value = "X-Job-Lease", required = false) String lease) {
-    service.heartbeat(node(id, authorization), job.toString(), lease(lease));
-    return new ApiResponse<>(true);
+    return new ApiResponse<>(
+        service.heartbeat(node(id, authorization), job.toString(), lease(lease)));
   }
 }

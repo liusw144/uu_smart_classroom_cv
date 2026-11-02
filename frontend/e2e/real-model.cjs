@@ -92,7 +92,7 @@ async function main() {
     await page.getByRole('button', { name: '提交视觉作业', exact: true }).click()
     const job = (await (await submitted).json()).data
     await page.getByText(`作业 ${job.id}：已完成真实推理`, { exact: true }).waitFor()
-    await page.getByTestId('detection-result').getByText(/采样/).waitFor()
+    await page.getByTestId('inference-summary').waitFor()
     const result = await request('GET', `/detections/${job.id}/result`)
     assert.equal(result.media_kind, kind)
     assert.ok(result.person_instances > 0)

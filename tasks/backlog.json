@@ -32,7 +32,7 @@
       "depends_on": [
         "M1-TEACHING"
       ],
-      "local_delivery_note": "MySQL持久作业、600秒租约、最多3次发放、取消、结果幂等及校验已本机验证。"
+      "local_delivery_note": "持久作业、租约/自动续租、取消、幂等已本机验证；生产容量仍未验收。"
     },
     {
       "id": "M1-ASSETS",
@@ -50,7 +50,7 @@
       "depends_on": [
         "M1-JOBS"
       ],
-      "local_delivery_note": "独立出站Agent和SQLite Outbox短时断网/进程重启/重连已验证；生产mTLS、长期续租未实现。"
+      "local_delivery_note": "增加90秒在线判定、本校节点状态页、推理前/期间续租、Outbox互斥与断网恢复；生产mTLS/长期断网仍未完成。"
     },
     {
       "id": "M1-MODELS",
@@ -59,7 +59,7 @@
       "depends_on": [
         "M1-ASSETS"
       ],
-      "local_delivery_note": "锁定YOLOX-tiny和RTMPose-s ONNX真实CPU推理及17点姿态；课堂标注评测待完成。"
+      "local_delivery_note": "真实YOLOX/RTMPose已运行，新增课堂标注清单与按录制分组工具；未获得人工课堂数据，精度仍未验收。"
     },
     {
       "id": "M1-IMAGE",
@@ -78,7 +78,7 @@
       "depends_on": [
         "M1-IMAGE"
       ],
-      "local_delivery_note": "短MP4采样和浏览器摄像头最多5帧已实现；公开视频虚拟设备已测，实体摄像头、RTSP、批量与容量未测。"
+      "local_delivery_note": "短MP4已全片有界采样并包含尾帧；摄像头/RTSP采集工具以文件输入验证，实体设备和批量容量未测。"
     },
     {
       "id": "M2-REPORTS",
@@ -92,11 +92,12 @@
     {
       "id": "M3-DEPLOY",
       "title": "四模式安装、升级、恢复及证书轮换",
-      "status": "todo",
+      "status": "partial",
       "depends_on": [
         "M2-VIDEO",
         "M2-REPORTS"
-      ]
+      ],
+      "local_delivery_note": "补维护窗口备份和全新隔离库恢复，14表2视图107文件已演练；四模式安装、生产灾备及升级回滚未验收。"
     },
     {
       "id": "M4-PRODUCTION",
@@ -105,6 +106,15 @@
       "depends_on": [
         "M3-DEPLOY"
       ]
+    },
+    {
+      "id": "M2-TRIAL-READINESS",
+      "title": "CI、活性续租、全片采样、安全恢复及现场准备",
+      "status": "implemented_local",
+      "depends_on": [
+        "M1-IMAGE"
+      ],
+      "local_delivery_note": "详见tasks/M2-TRIAL-READINESS.md；未宣称生产就绪或远端CI已通过。"
     }
   ],
   "status_definitions": {

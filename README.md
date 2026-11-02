@@ -11,7 +11,7 @@ cd uu_smart_classroom_cv
 
 Windows 指南以 `D:\self\uu_smart_classroom_cv` 为本地示例路径，可按实际克隆位置调整。
 
-直接使用本机 MySQL/Redis 时，先阅读[本机最小版本运行指南](docs/guides/本机最小版本运行指南.md)，再按[真实模型演示指南](docs/guides/真实模型本机演示指南.md)启用模型、视频、摄像头、AI及edge。教师端5173、管理端5172、Java8089、视觉5000、Qwen18188。凭据只放在Git忽略的 `.env.local`。最新证据见[真实模型验收](docs/qa/real-model-verification-2026-11-02.md)。
+直接使用本机 MySQL/Redis 时，先阅读[本机最小版本运行指南](docs/guides/本机最小版本运行指南.md)，再按[真实模型演示指南](docs/guides/真实模型本机演示指南.md)启用模型、视频、摄像头、AI及edge。教师端5173、管理端5172、Java8089、视觉5000、Qwen18188。凭据只放在Git忽略的 `.env.local`。最新证据见[真实模型验收](docs/qa/real-model-verification-2026-11-02.md)。 后续已增加节点活性/自动续租、全片采样、备份恢复、设备/标注工具及CI，见[试点基础运维指南](docs/guides/试点基础完善与运维指南.md)与[试点基础验收](docs/qa/trial-readiness-verification-2026-11-02.md)。
 
 ## 模块地图
 

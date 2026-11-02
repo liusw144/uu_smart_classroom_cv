@@ -28,32 +28,53 @@ public class JsonInferenceResultCodec implements InferenceResultCodec {
     } catch (RuntimeException error) {
       throw ResourceProblem.invalid("结果JSON无效");
     }
-    require(result.isObject() && result.path("schema_version").asInt() == 1);
+    require(result.isObject() && Set.of(1, 2).contains(result.path("schema_version").asInt()));
     var fields =
-        List.of(
-            "schema_version",
-            "job_id",
-            "asset_id",
-            "input_sha256",
-            "model_version",
-            "model_hashes",
-            "media_kind",
-            "width",
-            "height",
-            "duration_ms",
-            "sample_interval_ms",
-            "sampled_frames",
-            "person_instances",
-            "unique_people",
-            "pose_counts",
-            "frames",
-            "artifact_sha256",
-            "artifact_size",
-            "artifact_content_type",
-            "request_digest",
-            "processed_at",
-            "elapsed_ms",
-            "interpretation");
+        new ArrayList<>(
+            List.of(
+                "schema_version",
+                "job_id",
+                "asset_id",
+                "input_sha256",
+                "model_version",
+                "model_hashes",
+                "media_kind",
+                "width",
+                "height",
+                "duration_ms",
+                "sample_interval_ms",
+                "sampled_frames",
+                "person_instances",
+                "unique_people",
+                "pose_counts",
+                "frames",
+                "artifact_sha256",
+                "artifact_size",
+                "artifact_content_type",
+                "request_digest",
+                "processed_at",
+                "elapsed_ms",
+                "interpretation"));
+    if (result.path("schema_version").asInt() == 2) {
+      fields.addAll(List.of("sampling_strategy", "coverage_start_ms", "coverage_end_ms"));
+      require(
+          Set.of("STILL", "FIXED_INTERVAL_WITH_TAIL", "UNIFORM_FULL_SPAN")
+              .contains(result.path("sampling_strategy").asText()));
+      require(
+          result.path("coverage_start_ms").isIntegralNumber()
+              && result.path("coverage_end_ms").isIntegralNumber());
+      require(
+          result.path("coverage_start_ms").asInt()
+              == result.path("frames").path(0).path("timestamp_ms").asInt());
+      require(
+          result.path("coverage_end_ms").asInt()
+              == result
+                  .path("frames")
+                  .path(result.path("frames").size() - 1)
+                  .path("timestamp_ms")
+                  .asInt());
+      require(result.path("coverage_end_ms").asInt() <= result.path("duration_ms").asInt());
+    }
     require(result.size() == fields.size());
     for (String field : fields) require(result.has(field));
     for (String field :
@@ -69,7 +90,7 @@ public class JsonInferenceResultCodec implements InferenceResultCodec {
             "elapsed_ms")) require(result.path(field).isIntegralNumber());
     require(
         result.path("sample_interval_ms").asInt() >= 100
-            && result.path("sample_interval_ms").asInt() <= 5000
+            && result.path("sample_interval_ms").asInt() <= 30000
             && result.path("elapsed_ms").asLong() >= 0);
     require(result.path("request_digest").asText().matches("[a-f0-9]{64}"));
     try {

@@ -75,6 +75,26 @@ def pose_candidates(points, scores):
     return ["HAND_UP_CANDIDATE"] if raised else []
 
 
+def video_samples(count, fps, interval, maximum):
+    if count < 1 or not math.isfinite(fps) or fps <= 0 or interval < 100 or maximum < 2:
+        raise ValueError("视频采样配置无效")
+    duration = round(count / fps * 1000)
+    indices = sorted(
+        {
+            min(count - 1, round(timestamp * fps / 1000))
+            for timestamp in range(0, max(1, duration), interval)
+        }
+        | {count - 1}
+    )
+    strategy = "FIXED_INTERVAL_WITH_TAIL"
+    if len(indices) > maximum:
+        indices = [round(i * (count - 1) / (maximum - 1)) for i in range(maximum)]
+        strategy = "UNIFORM_FULL_SPAN"
+    points = [(index, round(index / fps * 1000)) for index in indices]
+    effective = max(interval, math.ceil(points[-1][1] / max(1, len(points) - 1)))
+    return points, strategy, effective
+
+
 class OnnxPoseEngine:
     def __init__(self, settings):
         self.settings = settings
@@ -197,18 +217,26 @@ class OnnxPoseEngine:
         started = time.monotonic()
         data = request.model_dump(mode="json")
         fingerprint = hashlib.sha256(
-            json.dumps({"request": data, "models": self.hashes}, sort_keys=True).encode()
+            json.dumps(
+                {"request": data, "models": self.hashes, "schema_version": 2}, sort_keys=True
+            ).encode()
         ).hexdigest()
         job = str(request.job_id)
         metadata_path = self.settings.result_root / f"{job}.json"
         if metadata_path.is_file():
             result = json.loads(metadata_path.read_text(encoding="utf-8"))
-            if result.get("request_digest") != fingerprint:
+            legacy = hashlib.sha256(
+                json.dumps({"request": data, "models": self.hashes}, sort_keys=True).encode()
+            ).hexdigest()
+            if result.get("request_digest") not in {fingerprint, legacy}:
                 raise ValueError("作业编号已绑定其他输入")
-            return result
+            if result.get("schema_version") == 2:
+                return result
         path = read_asset(self.settings.asset_cache, str(request.asset_id), request.input_sha256)
         frames = []
         kind = request.media_kind
+        strategy = "STILL"
+        effective_interval = self.settings.sample_interval_ms
         if kind in {"IMAGE", "CAMERA"}:
             image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_COLOR)
             if image is None:
@@ -234,6 +262,7 @@ class OnnxPoseEngine:
                     not capture.isOpened()
                     or not math.isfinite(fps)
                     or not 0 < fps <= 120
+                    or not math.isfinite(count)
                     or count <= 0
                 ):
                     raise ValueError("视频无法解码")
@@ -241,10 +270,10 @@ class OnnxPoseEngine:
                 if duration > self.settings.max_video_seconds * 1000:
                     raise ValueError("视频时长超出本机演示上限")
                 rendered = []
-                for timestamp in range(0, max(1, duration), self.settings.sample_interval_ms):
-                    if len(frames) >= self.settings.max_frames:
-                        break
-                    frame_index = min(int(count) - 1, round(timestamp * fps / 1000))
+                points, strategy, effective_interval = video_samples(
+                    int(count), fps, self.settings.sample_interval_ms, self.settings.max_frames
+                )
+                for frame_index, timestamp in points:
                     capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
                     ok, image = capture.read()
                     if not ok:
@@ -256,7 +285,7 @@ class OnnxPoseEngine:
                     rendered.append(annotated)
                 height, width = rendered[0].shape[:2]
                 artifact = self.settings.result_root / f"{job}.mp4"
-                self.encode_video(rendered, artifact, width, height)
+                self.encode_video(rendered, artifact, width, height, effective_interval)
                 content_type = "video/mp4"
             finally:
                 capture.release()
@@ -270,7 +299,7 @@ class OnnxPoseEngine:
         with artifact.open("rb") as source:
             digest = hashlib.file_digest(source, "sha256").hexdigest()
         result = {
-            "schema_version": 1,
+            "schema_version": 2,
             "job_id": job,
             "asset_id": str(request.asset_id),
             "input_sha256": request.input_sha256,
@@ -280,7 +309,10 @@ class OnnxPoseEngine:
             "width": width,
             "height": height,
             "duration_ms": duration,
-            "sample_interval_ms": self.settings.sample_interval_ms,
+            "sample_interval_ms": effective_interval,
+            "sampling_strategy": strategy,
+            "coverage_start_ms": frames[0]["timestamp_ms"],
+            "coverage_end_ms": frames[-1]["timestamp_ms"],
             "sampled_frames": len(frames),
             "person_instances": sum(len(frame["persons"]) for frame in frames),
             "unique_people": None,
@@ -301,7 +333,7 @@ class OnnxPoseEngine:
         partial.replace(metadata_path)
         return result
 
-    def encode_video(self, frames, target, width, height):
+    def encode_video(self, frames, target, width, height, interval=None):
         temporary = target.with_suffix(".part")
         command = [
             self.settings.ffmpeg,
@@ -315,7 +347,7 @@ class OnnxPoseEngine:
             "-video_size",
             f"{width}x{height}",
             "-framerate",
-            str(1000 / self.settings.sample_interval_ms),
+            str(1000 / (interval or self.settings.sample_interval_ms)),
             "-i",
             "pipe:0",
             "-an",

@@ -53,6 +53,17 @@ def scan_sources(root: Path) -> list[str]:
     return errors
 
 
+def workflow_errors(root:Path)->list[str]:
+    target=root/'.github/workflows/verify.yml'
+    if not target.is_file():return ['缺少持续验证工作流.github/workflows/verify.yml']
+    value=target.read_text(encoding='utf-8');errors=[]
+    for reference in re.findall(r'(?m)^\s*(?:-\s*)?uses:\s*([^\s]+)',value):
+        if not reference.startswith('./') and not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[a-f0-9]{40}',reference):
+            errors.append('远程CI动作必须固定提交SHA：'+reference)
+    if 'pull_request_target' in value:errors.append('开发验证工作流不使用高权限PR事件')
+    return errors
+
+
 def production_errors(root: Path) -> list[str]:
     manifest = root / "harness/manifest.json"
     if not manifest.exists():
@@ -85,6 +96,7 @@ def main() -> int:
         required.extend([f"{module}/AGENTS.md", f"{module}/README.md", f"{module}/{lock}"])
     errors = [f"缺少工程文件：{name}" for name in required if not (root / name).is_file()]
     errors.extend(scan_sources(root))
+    errors.extend(workflow_errors(root))
     for path in (root / "contracts").glob("*.json"):
         try:
             json.loads(path.read_text(encoding="utf-8"))

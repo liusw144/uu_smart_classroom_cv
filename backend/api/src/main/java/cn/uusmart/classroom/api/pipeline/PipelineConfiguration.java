@@ -8,6 +8,11 @@ import org.springframework.context.annotation.*;
 @Configuration
 public class PipelineConfiguration {
   @Bean
+  NodeStatusService nodeStatusService(PipelineRepository repository) {
+    return new NodeStatusService(repository);
+  }
+
+  @Bean
   AnalysisService analysisService(
       PipelineRepository repository,
       MediaService media,

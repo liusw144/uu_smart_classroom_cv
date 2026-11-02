@@ -308,7 +308,10 @@
         "properties": {
           "schema_version": {
             "type": "integer",
-            "const": 1,
+            "enum": [
+              1,
+              2
+            ],
             "title": "Schema Version"
           },
           "job_id": {
@@ -363,6 +366,7 @@
           },
           "sample_interval_ms": {
             "type": "integer",
+            "maximum": 30000.0,
             "minimum": 100.0,
             "title": "Sample Interval Ms"
           },
@@ -431,6 +435,46 @@
           "interpretation": {
             "type": "string",
             "title": "Interpretation"
+          },
+          "sampling_strategy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "STILL",
+                  "FIXED_INTERVAL_WITH_TAIL",
+                  "UNIFORM_FULL_SPAN"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sampling Strategy"
+          },
+          "coverage_start_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Start Ms"
+          },
+          "coverage_end_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage End Ms"
           }
         },
         "additionalProperties": false,

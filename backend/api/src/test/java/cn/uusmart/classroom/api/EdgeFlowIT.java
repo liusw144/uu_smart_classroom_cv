@@ -26,7 +26,7 @@ class EdgeFlowIT extends SchoolHttpITSupport {
 
   void register() throws Exception {
     jdbc.update(
-        "INSERT INTO edge_node(id,tenant_id,name,token_hash) VALUES ('it-node-a',101,'测试边缘节点',?),('it-node-b',102,'另一学校节点',?)",
+        "INSERT INTO edge_node(id,tenant_id,name,token_hash,last_seen_at) VALUES ('it-node-a',101,'测试边缘节点',?,CURRENT_TIMESTAMP(6)),('it-node-b',102,'另一学校节点',?,CURRENT_TIMESTAMP(6))",
         hash(NODE_TOKEN.getBytes(StandardCharsets.UTF_8)),
         hash((NODE_TOKEN + "other").getBytes(StandardCharsets.UTF_8)));
   }
@@ -116,6 +116,52 @@ class EdgeFlowIT extends SchoolHttpITSupport {
   void anonymousAndHumanSessionCannotClaimNodeJobs() throws Exception {
     assertEquals(401, node("POST", "/claim", "{}", null, null, null).statusCode());
     assertEquals(401, node("POST", "/claim", "{}", teacher, "it-node-a", null).statusCode());
+  }
+
+  @Test
+  void offlineNodesCannotReceiveJobsAndStatusIsSchoolScoped() throws Exception {
+    register();
+    jdbc.update(
+        "UPDATE edge_node SET last_seen_at=DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 91 SECOND) WHERE id='it-node-a'");
+    assertFalse(
+        data(call("GET", "/capabilities", null, teacher)).path("node_available").asBoolean());
+    assertEquals(403, call("GET", "/edge-nodes", null, teacher).statusCode());
+    var nodes = data(call("GET", "/edge-nodes", null, admin));
+    assertEquals(1, nodes.path("total").asInt());
+    assertFalse(nodes.path("items").path(0).path("online").asBoolean());
+    assertFalse(nodes.toString().contains("token_hash"));
+    assertFalse(nodes.toString().contains("it-node-b"));
+    data(node("POST", "/claim", "{}", NODE_TOKEN, "it-node-a", null));
+    assertTrue(
+        data(call("GET", "/capabilities", null, teacher)).path("node_available").asBoolean());
+  }
+
+  @Test
+  void authenticatedHeartbeatPersistsNewLeaseAndNodeLiveness() throws Exception {
+    register();
+    node("POST", "/claim", "{}", NODE_TOKEN, "it-node-a", null);
+    String id = enqueue();
+    var claimed = data(node("POST", "/claim", "{}", NODE_TOKEN, "it-node-a", null));
+    jdbc.update(
+        "UPDATE detection_job SET lease_until=DATE_ADD(CURRENT_TIMESTAMP(6),INTERVAL 10 SECOND) WHERE id=?",
+        id);
+    jdbc.update(
+        "UPDATE edge_node SET last_seen_at=DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 91 SECOND) WHERE id='it-node-a'");
+    var renewed =
+        data(
+            node(
+                "POST",
+                "/jobs/" + id + "/heartbeat",
+                null,
+                NODE_TOKEN,
+                "it-node-a",
+                claimed.path("lease_id").asText()));
+    assertEquals(claimed.path("lease_id").asText(), renewed.path("lease_id").asText());
+    assertTrue(
+        java.time.Instant.parse(renewed.path("lease_expires_at").asText())
+            .isAfter(java.time.Instant.now().plusSeconds(550)));
+    assertTrue(
+        data(call("GET", "/capabilities", null, teacher)).path("node_available").asBoolean());
   }
 
   @Test

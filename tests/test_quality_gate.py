@@ -25,6 +25,16 @@ class QualityGateTest(unittest.TestCase):
         errors = self.scan_file("backend/domain/src/main/java/Bad.java", "import org.springframework.stereotype.Service;\n")
         self.assertTrue(errors)
 
+    def test_missing_ci_workflow_cannot_pass_foundation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertTrue(self.module.workflow_errors(Path(directory)))
+
+    def test_unpinned_remote_action_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'.github/workflows').mkdir(parents=True)
+            (root/'.github/workflows/verify.yml').write_text('jobs:\n  test:\n    steps:\n      - uses: actions/checkout@main\n',encoding='utf-8')
+            self.assertTrue(self.module.workflow_errors(root))
+
     def test_frontend_cannot_import_backend_source(self):
         errors = self.scan_file("frontend/apps/teacher/src/bad.ts", "import x from '../../../../backend/internal';\n")
         self.assertTrue(errors)

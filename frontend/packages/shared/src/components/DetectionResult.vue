@@ -3,6 +3,10 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { errorMessage, type SchoolApi } from '../api'
 const props = defineProps<{ api: SchoolApi; jobId: string }>()
 interface Result {
+  sampling_strategy?: string
+  coverage_start_ms?: number
+  coverage_end_ms?: number
+  duration_ms?: number
   model_version: string
   sampled_frames: number
   person_instances: number
@@ -59,7 +63,11 @@ onUnmounted(() => {
     <h3>真实推理结果</h3>
     <p v-if="error" class="error" role="alert">{{ error }}</p>
     <template v-if="result">
-      <p>
+      <p v-if="result.sampling_strategy && result.sampling_strategy !== 'STILL'">
+        采样范围：{{ result.coverage_start_ms }}—{{ result.coverage_end_ms }} 毫秒；原片时长
+        {{ result.duration_ms }} 毫秒。当前展示为全片采样摘要。
+      </p>
+      <p data-testid="inference-summary">
         模型：{{ result.model_version }}；采样 {{ result.sampled_frames }} 帧；累计检出
         {{ result.person_instances }} 人次；抬手姿态候选
         {{ result.pose_counts.HAND_UP_CANDIDATE }} 人次。

@@ -1,12 +1,29 @@
 import importlib.util
 from pathlib import Path
 import unittest
+from unittest.mock import patch
+import tempfile
 
 
 SPEC = importlib.util.spec_from_file_location("local_dev", Path(__file__).resolve().parents[1] / "scripts/local_dev.py")
 
 
 class LocalEnvironmentTest(unittest.TestCase):
+    def test_wildcard_database_accounts_are_rejected_outside_ci(self):
+        module=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(module)
+        with patch.dict(module.os.environ,{'GITHUB_ACTIONS':'false'}),self.assertRaises(SystemExit):
+            module.initialize({},account_host='%')
+
+    def test_ci_database_accounts_match_container_network_and_keep_schema_scope(self):
+        module=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(module)
+        statements=[]
+        def sql(values,value):statements.append(value);return ''
+        with tempfile.TemporaryDirectory() as directory,patch.dict(module.os.environ,{'GITHUB_ACTIONS':'true'}),patch.object(module,'ENV_FILE',Path(directory)/'.env.local'),patch.object(module,'mysql',sql):
+            module.initialize({},account_host='%')
+        grant=statements[-1]
+        self.assertIn("@'%'",grant)
+        self.assertIn('ON `uu_classroom_test`.*',grant)
+        self.assertNotIn('ON *.*',grant)
     def test_edge_vision_and_frontend_never_receive_business_credentials(self):
         module=importlib.util.module_from_spec(SPEC)
         SPEC.loader.exec_module(module)

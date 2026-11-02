@@ -21,6 +21,9 @@ public interface PipelineRepository {
 
   Optional<String> availableNode(long tenantId);
 
+  cn.uusmart.classroom.application.Page<EdgeNodeStatus> nodes(
+      long tenantId, String q, int page, int size);
+
   void enqueue(DetectionJob job, String nodeId, String mediaKind);
 
   Optional<JobLease> claim(NodePrincipal node);

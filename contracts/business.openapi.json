@@ -3975,7 +3975,22 @@
         ],
         "responses": {
           "200": {
-            "description": "操作已确认"
+            "description": "返回经续租后的同一作业租约；执行器须持久化新的到期时间",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/EdgeLease"
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "节点身份无效"
@@ -4060,6 +4075,53 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/edge-nodes": {
+      "get": {
+        "summary": "本校管理员查询节点活性及排队状态，不返回凭据",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "本校节点分页列表"
+          },
+          "401": {
+            "description": "未登录"
+          },
+          "403": {
+            "description": "非学校管理员"
           }
         }
       }
@@ -5102,7 +5164,10 @@
         "properties": {
           "schema_version": {
             "type": "integer",
-            "const": 1,
+            "enum": [
+              1,
+              2
+            ],
             "title": "Schema Version"
           },
           "job_id": {
@@ -5157,6 +5222,7 @@
           },
           "sample_interval_ms": {
             "type": "integer",
+            "maximum": 30000.0,
             "minimum": 100.0,
             "title": "Sample Interval Ms"
           },
@@ -5225,6 +5291,46 @@
           "interpretation": {
             "type": "string",
             "title": "Interpretation"
+          },
+          "sampling_strategy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "STILL",
+                  "FIXED_INTERVAL_WITH_TAIL",
+                  "UNIFORM_FULL_SPAN"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sampling Strategy"
+          },
+          "coverage_start_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Start Ms"
+          },
+          "coverage_end_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage End Ms"
           }
         },
         "additionalProperties": false,

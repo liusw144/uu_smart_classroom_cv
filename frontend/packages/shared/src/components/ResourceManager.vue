@@ -295,7 +295,7 @@ onMounted(load)
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in rows" :key="String(row.id)">
+          <tr v-for="row in rows" :key="String(row.id)" :data-record-id="String(row.id)">
             <td v-for="column in resource.columns" :key="column.key">
               {{ displayValue(row[column.key]) }}
             </td>

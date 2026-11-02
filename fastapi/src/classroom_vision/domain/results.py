@@ -22,7 +22,7 @@ class FrameResult(BaseModel):
 
 class InferenceResult(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
-    schema_version: Literal[1]
+    schema_version: Literal[1, 2]
     job_id: str
     asset_id: str
     input_sha256: str
@@ -32,7 +32,7 @@ class InferenceResult(BaseModel):
     width: Annotated[int, Field(ge=2, le=1280)]
     height: Annotated[int, Field(ge=2, le=1280)]
     duration_ms: Annotated[int, Field(ge=0, le=30000)]
-    sample_interval_ms: Annotated[int, Field(ge=100)]
+    sample_interval_ms: Annotated[int, Field(ge=100, le=30000)]
     sampled_frames: Annotated[int, Field(ge=1, le=32)]
     person_instances: Annotated[int, Field(ge=0)]
     unique_people: None
@@ -45,9 +45,21 @@ class InferenceResult(BaseModel):
     processed_at: str
     elapsed_ms: Annotated[int, Field(ge=0)]
     interpretation: str
+    sampling_strategy: Literal["STILL", "FIXED_INTERVAL_WITH_TAIL", "UNIFORM_FULL_SPAN"] | None = (
+        None
+    )
+    coverage_start_ms: Annotated[int, Field(ge=0)] | None = None
+    coverage_end_ms: Annotated[int, Field(ge=0)] | None = None
 
     @model_validator(mode="after")
     def validate_counts(self):
+        if self.schema_version == 2 and (
+            self.sampling_strategy is None
+            or self.coverage_start_ms != self.frames[0].timestamp_ms
+            or self.coverage_end_ms != self.frames[-1].timestamp_ms
+            or self.coverage_end_ms > self.duration_ms
+        ):
+            raise ValueError("采样覆盖范围与帧明细不一致")
         if self.sampled_frames != len(self.frames) or self.person_instances != sum(
             len(frame.persons) for frame in self.frames
         ):

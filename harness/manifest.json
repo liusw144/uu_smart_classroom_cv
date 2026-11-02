@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "uu_smart_classroom_cv",
-  "stage": "local_real_model_demo",
+  "stage": "local_trial_foundation",
   "language": "zh-CN",
   "modules": {
     "backend": {
@@ -46,6 +46,6 @@
     "本机开发节点令牌不能代替生产mTLS、证书轮换和登录限流",
     "边缘短时离线已验证，长期断网、磁盘配额、保留期及批量容量尚未验收",
     "可信生产证据验证器未实现，生产门禁始终拒绝放行",
-    "四模式安装、混合云原始素材留校、数据库恢复与多节点容量验收未完成"
+    "本机维护窗口隔离恢复已演练；四模式生产安装、混合云留校存储、生产灾备与多节点容量仍未验收"
   ]
 }

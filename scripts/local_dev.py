@@ -46,7 +46,9 @@ def mysql(values, sql):
         config.unlink(missing_ok=True)
 
 
-def initialize(values):
+def initialize(values, account_host='127.0.0.1'):
+    if account_host not in {'127.0.0.1','%'} or (account_host=='%' and os.environ.get('GITHUB_ACTIONS')!='true'):
+        raise SystemExit('通配连接来源只允许GitHub临时服务容器；本机账号保持回环限制。')
     names = {'uu_classroom_local', 'uu_classroom_test'}
     found = mysql(values, "SELECT TABLE_SCHEMA,TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA IN ('uu_classroom_local','uu_classroom_test');")
     allowed = {'flyway_schema_history', 'tenant', 'school_account', 'school_class', 'course', 'lesson_task', 'lesson_task_view', 'school_notice', 'operation_log', 'model_catalog', 'behavior_category', 'media_asset', 'detection_job', 'detection_job_view', 'analysis_report', 'edge_node'}
@@ -66,8 +68,8 @@ def initialize(values):
         if not user.replace('_', '').isalnum() or any(char in password for char in "'\\\r\n"):
             raise SystemExit('专用账号格式无效，停止初始化。')
         statements.extend([f'CREATE DATABASE IF NOT EXISTS `{database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_cs;',
-                           f"CREATE USER IF NOT EXISTS '{user}'@'127.0.0.1' IDENTIFIED BY '{password}';",
-                           f"GRANT ALL PRIVILEGES ON `{database}`.* TO '{user}'@'127.0.0.1';"])
+                           f"CREATE USER IF NOT EXISTS '{user}'@'{account_host}' IDENTIFIED BY '{password}';",
+                           f"GRANT ALL PRIVILEGES ON `{database}`.* TO '{user}'@'{account_host}';"])
     mysql(values, '\n'.join(statements))
     ENV_FILE.write_text('# 仅供本机使用，禁止提交或分享\n' + '\n'.join(f'{key}={value}' for key, value in values.items()) + '\n', encoding='utf-8')
     print('专用业务库与测试库已准备；随机应用凭据及初始化密码仅保存在.env.local。')
@@ -144,6 +146,8 @@ def main():
     parser.add_argument('extra', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     values = load_values()
+    if args.action in {'backend','edge'} and (ROOT/'runtime/maintenance.lock').exists():
+        raise SystemExit('项目处于备份恢复维护窗口，拒绝启动写入服务。')
     if args.action == 'ai':
         lock=json.loads((ROOT/'models/demo-assets.lock.json').read_text(encoding='utf-8'))
         with (ROOT/'runtime'/lock['ai']['path']).open('rb') as source:

@@ -61,7 +61,7 @@ public class JdbcPipelineRepository implements PipelineRepository {
   public Optional<String> availableNode(long tenant) {
     return jdbc
         .query(
-            "SELECT id FROM edge_node WHERE tenant_id=? AND enabled=true ORDER BY id LIMIT 1",
+            "SELECT id FROM edge_node WHERE tenant_id=? AND enabled=true AND last_seen_at>=DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 90 SECOND) ORDER BY id LIMIT 1",
             (r, n) -> r.getString("id"),
             tenant)
         .stream()
@@ -81,6 +81,38 @@ public class JdbcPipelineRepository implements PipelineRepository {
         Timestamp.from(j.createdAt()),
         node,
         kind);
+  }
+
+  public cn.uusmart.classroom.application.Page<EdgeNodeStatus> nodes(
+      long tenant, String q, int page, int size) {
+    String filter = " WHERE n.tenant_id=? AND (n.name LIKE ? OR n.id LIKE ?)";
+    String pattern = "%" + q + "%";
+    Long total =
+        jdbc.queryForObject(
+            "SELECT COUNT(*) FROM edge_node n" + filter, Long.class, tenant, pattern, pattern);
+    var items =
+        jdbc.query(
+            "SELECT n.id,n.name,n.enabled,n.last_seen_at,(n.enabled AND n.last_seen_at>=DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 90 SECOND)) AS online,(SELECT COUNT(*) FROM detection_job j WHERE j.tenant_id=n.tenant_id AND j.node_id=n.id AND j.status='QUEUED') AS queued,(SELECT COUNT(*) FROM detection_job j WHERE j.tenant_id=n.tenant_id AND j.node_id=n.id AND j.status='RUNNING') AS running FROM edge_node n"
+                + filter
+                + " ORDER BY n.id LIMIT ? OFFSET ?",
+            (r, i) ->
+                new EdgeNodeStatus(
+                    r.getString("id"),
+                    r.getString("name"),
+                    r.getBoolean("enabled"),
+                    r.getBoolean("online"),
+                    r.getTimestamp("last_seen_at") == null
+                        ? null
+                        : r.getTimestamp("last_seen_at").toInstant(),
+                    r.getLong("queued"),
+                    r.getLong("running")),
+            tenant,
+            pattern,
+            pattern,
+            size,
+            (page - 1) * size);
+    return new cn.uusmart.classroom.application.Page<>(
+        items, total == null ? 0 : total, page, size);
   }
 
   public Optional<StoredJob> nodeJob(NodePrincipal node, String id) {
@@ -177,6 +209,10 @@ public class JdbcPipelineRepository implements PipelineRepository {
             id,
             lease)
         == 0) throw ResourceProblem.conflict("租约已失效");
+    jdbc.update(
+        "UPDATE edge_node SET last_seen_at=CURRENT_TIMESTAMP(6) WHERE tenant_id=? AND id=?",
+        node.tenantId(),
+        node.id());
   }
 
   public void cancel(Actor actor, String id) {

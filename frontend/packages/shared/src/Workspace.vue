@@ -15,7 +15,9 @@ const navigation = computed(() => [
   ...['classes', 'courses', 'tasks', 'assets'].map((key) => resources[key]),
   { key: 'image', title: '视觉检测' },
   ...['detections', 'reports', 'notices'].map((key) => resources[key]),
-  ...(admin.value ? ['users', 'models', 'categories', 'logs'].map((key) => resources[key]) : []),
+  ...(admin.value
+    ? ['users', 'models', 'categories', 'edge-nodes', 'logs'].map((key) => resources[key])
+    : []),
   { key: 'profile', title: '个人中心' },
 ])
 </script>

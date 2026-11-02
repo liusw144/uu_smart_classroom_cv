@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,10 +15,10 @@ class Settings(BaseSettings):
     models_root: Path = Path("../runtime/models")
     asset_cache: Path = Path("../runtime/edge/assets")
     result_root: Path = Path("../runtime/edge/results")
-    cpu_threads: int = 2
-    sample_interval_ms: int = 250
-    max_frames: int = 32
-    max_video_seconds: int = 30
+    cpu_threads: int = Field(default=2, ge=1, le=8)
+    sample_interval_ms: int = Field(default=250, ge=100, le=1000)
+    max_frames: int = Field(default=32, ge=2, le=32)
+    max_video_seconds: int = Field(default=30, ge=1, le=30)
     ffmpeg: str = "ffmpeg"
 
     @model_validator(mode="after")

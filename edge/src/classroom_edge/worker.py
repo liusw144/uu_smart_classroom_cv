@@ -4,12 +4,16 @@ import json
 import os
 import sqlite3
 import time
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
 
 import httpx
 from jsonschema import Draft202012Validator, FormatChecker
+
+from classroom_edge.locking import process_lock
 
 
 def digest(value):
@@ -60,9 +64,10 @@ class Outbox:
 
 
 class Worker:
-    def __init__(self, root, outbox, control, vision, validator=None):
+    def __init__(self, root, outbox, control, vision, validator=None, heartbeat_interval=30):
         self.root, self.outbox, self.control, self.vision = root, outbox, control, vision
         self.validator = validator
+        self.heartbeat_interval = heartbeat_interval
         (root / "assets").mkdir(parents=True, exist_ok=True)
         (root / "outbox-artifacts").mkdir(parents=True, exist_ok=True)
 
@@ -108,8 +113,7 @@ class Worker:
         atomic(target, value)
         self.outbox.save(lease, "CACHED")
 
-    def infer(self, item):
-        lease = item["lease"]
+    def compute(self, lease):
         # 只向本地视觉服务提交不可变编号，不传文件路径或远程地址。
         response = self.vision.post(
             "/internal/v1/detections",
@@ -144,10 +148,61 @@ class Worker:
             or digest(artifact) != result["artifact_sha256"]
         ):
             raise ValueError("结果下载哈希不符")
+        return result, artifact
+
+    def renew(self, lease):
+        response = self.control.post(self.endpoint(lease, "heartbeat"), headers=self.headers(lease))
+        response.raise_for_status()
+        updated = response.json()["data"]
+        if self.validator:
+            self.validator.validate(updated)
+        if any(
+            updated.get(key) != lease.get(key)
+            for key in (
+                "job_id",
+                "lease_id",
+                "asset_id",
+                "input_sha256",
+                "model_version",
+                "media_kind",
+                "attempt",
+            )
+        ):
+            raise ValueError("续租响应改变了不可变作业身份")
+        if datetime.fromisoformat(updated["lease_expires_at"]) <= datetime.now(UTC):
+            raise ValueError("续租响应已过期")
+        lease.update(updated)
+        self.outbox.save(lease, "CACHED")
+
+    def infer(self, item):
+        lease = item["lease"]
+        self.try_renew(lease)
+        if datetime.fromisoformat(lease["lease_expires_at"]) <= datetime.now(UTC):
+            self.outbox.save(lease, "REJECTED")
+            return
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            pending = executor.submit(self.compute, dict(lease))
+            while True:
+                try:
+                    result, artifact = pending.result(timeout=self.heartbeat_interval)
+                    break
+                except FutureTimeout:
+                    if pending.done():
+                        raise
+                    self.try_renew(lease)
         atomic(self.artifact_path(lease), artifact)
         self.outbox.save(
             lease, "RESULT_READY", json.dumps(result, ensure_ascii=False, allow_nan=False)
         )
+
+    def try_renew(self, lease):
+        try:
+            self.renew(lease)
+        except httpx.TransportError:
+            pass
+        except httpx.HTTPStatusError as error:
+            if error.response.status_code < 500 and error.response.status_code != 429:
+                raise
 
     def deliver(self, item):
         lease, result = item["lease"], json.loads(item["result"])
@@ -181,7 +236,7 @@ class Worker:
             pending = [] if item is None else [item]
         for item in pending:
             expiry = datetime.fromisoformat(item["lease"]["lease_expires_at"])
-            if expiry <= datetime.now(UTC):
+            if expiry <= datetime.now(UTC) and item["state"] != "RESULT_READY":
                 self.outbox.save(item["lease"], "REJECTED", item["result"])
                 continue
             try:
@@ -192,7 +247,7 @@ class Worker:
                 elif item["state"] == "RESULT_READY" and phase in ("all", "deliver"):
                     self.deliver(item)
             except httpx.HTTPStatusError as error:
-                if error.response.status_code in (404, 409):
+                if error.response.status_code in (401, 403, 404, 409):
                     self.outbox.save(item["lease"], "REJECTED", item["result"])
                 elif 400 <= error.response.status_code < 500 and error.response.status_code != 429:
                     # 永久输入错误向管理端显式报告；管理端断网时保留待重试记录。
@@ -210,8 +265,11 @@ class Worker:
 def main():
     parser = argparse.ArgumentParser(description="本机边缘执行器；断网只执行已缓存租约")
     parser.add_argument("--once", action="store_true")
+    parser.add_argument("--heartbeat-seconds", type=float, default=30)
     parser.add_argument("--phase", choices=["all", "cache", "infer", "deliver"], default="all")
     args = parser.parse_args()
+    if not 0.1 <= args.heartbeat_seconds <= 120:
+        parser.error("心跳间隔需在0.1至120秒")
     root = Path(os.environ["EDGE_STATE_ROOT"]).resolve()
     schema = json.loads(Path(os.environ["EDGE_LEASE_SCHEMA"]).read_text(encoding="utf-8"))
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
@@ -232,23 +290,26 @@ def main():
         trust_env=False,
         headers={"Authorization": "Bearer " + os.environ["VISION_SERVICE_TOKEN"]},
     )
-    outbox = Outbox(root / "outbox.db")
-    worker = Worker(root, outbox, control, vision, validator)
-    try:
-        while True:
-            try:
-                worker.step(args.phase)
-            except (httpx.HTTPError, ValueError, OSError):
-                print("边缘执行暂不可用，保留Outbox记录并等待重试。", flush=True)
+    with process_lock(root / "worker.lock"):
+        outbox = Outbox(root / "outbox.db")
+        worker = Worker(
+            root, outbox, control, vision, validator, heartbeat_interval=args.heartbeat_seconds
+        )
+        try:
+            while True:
+                try:
+                    worker.step(args.phase)
+                except (httpx.HTTPError, ValueError, OSError):
+                    print("边缘执行暂不可用，保留Outbox记录并等待重试。", flush=True)
+                    if args.once:
+                        raise SystemExit(1)
                 if args.once:
-                    raise SystemExit(1)
-            if args.once:
-                return
-            time.sleep(2)
-    finally:
-        outbox.close()
-        control.close()
-        vision.close()
+                    return
+                time.sleep(2)
+        finally:
+            outbox.close()
+            control.close()
+            vision.close()
 
 
 if __name__ == "__main__":

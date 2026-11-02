@@ -84,6 +84,9 @@ def main():
 
     try:
         start()
+        # 独立验收不启动常驻Agent，先以真实节点身份领取空队列更新活性。
+        active=request('POST','/internal/v1/edge/claim',values['EDGE_SERVICE_TOKEN'],headers={'X-Node-ID':values['EDGE_NODE_ID']})
+        if active is not None:raise RuntimeError('节点已有未完成任务，请先处理已有作业再做离线验收')
         token = request('POST', '/api/v1/auth/login', value={'school_code': 'local-school', 'username': values['TEACHER_USERNAME'], 'password': values['TEACHER_PASSWORD']})['access_token']
         task = request('GET', '/api/v1/tasks?q=开源模型验证&size=100', token)['items'][0]
         model = request('GET', '/api/v1/models?q=yolox-tiny-rtmpose-s-v1&size=100', token)['items'][0]

@@ -72,9 +72,11 @@ public final class EdgeExecutionService {
     return active(node, id, lease).lease().contentType();
   }
 
-  public void heartbeat(NodePrincipal node, String id, String lease) {
+  public cn.uusmart.classroom.domain.pipeline.JobLease heartbeat(
+      NodePrincipal node, String id, String lease) {
     active(node, id, lease);
     repository.heartbeat(node, id, lease);
+    return repository.nodeJob(node, id).orElseThrow(ResourceProblem::missing).lease();
   }
 
   public void fail(NodePrincipal node, String id, String lease, String code) {

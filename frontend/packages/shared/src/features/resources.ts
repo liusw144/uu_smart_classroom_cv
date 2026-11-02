@@ -24,6 +24,22 @@ const named = column('name', '名称')
 const id = column('id', '编号')
 const owner = column('owner_id', '负责人编号')
 export const resources: Record<string, Resource> = {
+  'edge-nodes': {
+    key: 'edge-nodes',
+    title: '边缘节点',
+    singular: '边缘节点',
+    columns: [
+      id,
+      named,
+      column('enabled', '启用'),
+      column('online', '在线'),
+      column('last_seen_at', '最近心跳'),
+      column('queued', '等待作业'),
+      column('running', '执行中'),
+    ],
+    fields: [],
+    hint: '仅显示本校节点；最近90秒有认证活动视为在线，密钥不向浏览器返回。',
+  },
   assets: {
     key: 'assets',
     title: '素材管理',

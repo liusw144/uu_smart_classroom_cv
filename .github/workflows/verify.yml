@@ -1,0 +1,110 @@
+name: 工程与本机业务验证
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    env:
+      PYTHONUTF8: '1'
+      UV_CACHE_DIR: ${{ github.workspace }}/runtime/cache/uv
+      CI_DB_ADMIN_PASSWORD: ci-ephemeral-fixture-only
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: ci-ephemeral-fixture-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3307:3306']
+        options: >-
+          --health-cmd="mysqladmin ping --host=127.0.0.1 --silent"
+          --health-interval=10s --health-timeout=5s --health-retries=15
+      redis:
+        image: redis:7.4-alpine
+        ports: ['6389:6379']
+        options: >-
+          --health-cmd="redis-cli ping" --health-interval=5s
+          --health-timeout=3s --health-retries=10
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: 安装Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: 安装Java
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/**/pom.xml
+      - name: 安装Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22.18.0'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: 安装uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+        with:
+          version: '0.12.18'
+          enable-cache: false
+      - name: 准备系统依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client libgl1 libglib2.0-0 ffmpeg
+      - name: 结构与根测试
+        run: |
+          python scripts/quality_gate.py
+          python -m unittest discover -s tests -v
+      - name: 前端验证
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run verify
+          npx playwright install --with-deps chromium
+      - name: 视觉服务验证
+        working-directory: fastapi
+        run: |
+          uv sync --frozen
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run pytest
+      - name: 边缘执行器验证
+        working-directory: edge
+        run: |
+          uv sync --frozen
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run pytest
+      - name: 隔离数据库与Java联调
+        run: |
+          python scripts/ci_prepare.py
+          python scripts/local_dev.py test
+      - name: 真实浏览器业务回归
+        run: python scripts/ci_browser.py
+      - name: 保存测试报告
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: 开发验证报告
+          retention-days: 7
+          include-hidden-files: true
+          path: |
+            backend/**/target/surefire-reports/TEST-*.xml
+            backend/**/target/failsafe-reports/TEST-*.xml
+            .harness/local-e2e/results.json
