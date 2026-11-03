@@ -10,6 +10,8 @@
 
 ## 录像分段与容量
 
+可调整批次规划参数见[容量基线](config/capacity-baseline.json)，推导与限制见[容量说明](../docs/production/capacity-baseline.md)。当前按300课堂、每间10分钟、每小时一批、30分钟完成规划，共6000个30秒片段；这是待实测假设，现有benchmark尚未自动读取该文件。
+
 `uv run --frozen python -m classroom_ops.segments --help` 查看本地授权录像的分段选项。工具使用FFmpeg生成不超过30秒的片段，输出摘要和完整性标志；失败或中断的清单不能当作完整输入。它不接入摄像头，不自动上传录像。
 
 `uv run --frozen python -m classroom_ops.benchmark --help` 查看真实视觉HTTP基线参数。默认必须使用CA和客户端证书，只有显式development模式可访问回环HTTP。输入素材必须已进入目标视觉服务缓存。重复3至20次，保留实际延迟、模型摘要、帧数和累计人次。学校均匀分配、70%利用率、用户指定完成窗口只用于估算执行槽，不能替代目标GPU实测或采购依据；300路入队也不能当作300路推理通过。

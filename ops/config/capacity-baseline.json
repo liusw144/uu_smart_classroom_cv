@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "status": "planning_assumption",
+  "description": "根据用户对示例的回复建立可调整压测假设，不是已签署SLA或实测结果。",
+  "contractual_sla": false,
+  "schools": 10,
+  "camera_sources_per_school": 100,
+  "concurrent_classrooms": 300,
+  "recordings_per_classroom_per_batch": 1,
+  "recording_seconds": 600,
+  "submission_interval_seconds": 3600,
+  "completion_window_seconds": 1800,
+  "clip_seconds": 30,
+  "planning_utilization": 0.7,
+  "school_allocation": "even_for_planning",
+  "deadline_origin": "requires_definition",
+  "includes_ai_report_generation": null,
+  "sampling_policy": "requires_classroom_validation",
+  "retention_days": null,
+  "derived": {
+    "clips_per_recording": 20,
+    "clips_per_batch": 6000,
+    "clips_per_school_per_batch": 600,
+    "video_seconds_per_batch": 180000,
+    "minimum_cluster_clips_per_second": 3.333333,
+    "planning_cluster_clips_per_second": 4.761905,
+    "planning_school_clips_per_second": 0.47619
+  },
+  "measurement": {
+    "hardware": null,
+    "gpu_count": null,
+    "measured_throughput": null,
+    "production_capacity_passed": false
+  },
+  "notes": [
+    "片段吞吐不是视频帧率，也不是GPU数量。",
+    "吞吐推导暂按整个完成窗口可用于处理计算；实际端到端流水线仍须测量。",
+    "每校负载均分仅用于规划，正式验收还需偏斜负载与故障余量。",
+    "现有benchmark尚未读取本文件，不能把其默认300短片估算当作6000片批次验收。"
+  ]
+}

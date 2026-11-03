@@ -1,0 +1,16 @@
+[project]
+name = "uu-classroom-vision-gpu-runtime"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "uu-smart-classroom-vision",
+    "onnxruntime-gpu==1.31.1",
+]
+
+[tool.uv.sources]
+uu-smart-classroom-vision = { path = "../..", editable = true }
+
+[tool.uv]
+# 各发行包共享onnxruntime/cv2命名空间；加速环境只保留一个实现。
+exclude-dependencies = ["onnxruntime", "opencv-python", "opencv-contrib-python"]
+environments = ["sys_platform == 'linux'", "sys_platform == 'win32' and platform_machine == 'AMD64'"]

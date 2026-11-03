@@ -10,11 +10,11 @@ from uuid import UUID, uuid4
 
 import cv2
 import numpy as np
-import onnxruntime as ort
-from rtmlib import YOLOX, RTMPose
 
 from classroom_vision.domain.models import DetectionRequest
 from classroom_vision.inference.engine import InferenceBusy
+from classroom_vision.inference.execution import create_session
+from classroom_vision.inference.model_adapters import SessionRTMPose, SessionYOLOX
 
 
 def load_model_files(lock: Path, root: Path):
@@ -101,30 +101,12 @@ class OnnxPoseEngine:
         self.manifest = load_model_files(settings.model_lock, settings.models_root)
         self.version = self.manifest["model_version"]
         self.hashes = {kind: self.manifest[kind]["sha256"] for kind in ["detector", "pose"]}
-        self.detector = YOLOX(
-            str(settings.models_root / self.manifest["detector"]["filename"]),
-            model_input_size=(416, 416),
-            mode="multiclass",
-            score_thr=0.3,
-            backend="onnxruntime",
-            device="cpu",
+        self.detector = SessionYOLOX(
+            create_session(settings.models_root / self.manifest["detector"]["filename"], settings)
         )
-        self.pose = RTMPose(
-            str(settings.models_root / self.manifest["pose"]["filename"]),
-            model_input_size=(192, 256),
-            backend="onnxruntime",
-            device="cpu",
+        self.pose = SessionRTMPose(
+            create_session(settings.models_root / self.manifest["pose"]["filename"], settings)
         )
-        options = ort.SessionOptions()
-        options.intra_op_num_threads = settings.cpu_threads
-        options.inter_op_num_threads = 1
-        options.log_severity_level = 3
-        for tool, kind in [(self.detector, "detector"), (self.pose, "pose")]:
-            tool.session = ort.InferenceSession(
-                str(settings.models_root / self.manifest[kind]["filename"]),
-                sess_options=options,
-                providers=["CPUExecutionProvider"],
-            )
         settings.result_root.mkdir(parents=True, exist_ok=True)
         self.lock = threading.Lock()
 
@@ -219,11 +201,13 @@ class OnnxPoseEngine:
 
     def cached_result(self, request):
         data = request.model_dump(mode="json")
-        fingerprint = hashlib.sha256(
-            json.dumps(
-                {"request": data, "models": self.hashes, "schema_version": 2}, sort_keys=True
-            ).encode()
-        ).hexdigest()
+        identity = {"request": data, "models": self.hashes, "schema_version": 2}
+        if self.settings.device != "cpu":
+            identity["execution"] = {
+                "device": self.settings.device,
+                "device_id": self.settings.device_id,
+            }
+        fingerprint = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
         job = str(request.job_id)
         metadata_path = self.settings.result_root / f"{job}.json"
         if metadata_path.is_file():
@@ -231,7 +215,8 @@ class OnnxPoseEngine:
             legacy = hashlib.sha256(
                 json.dumps({"request": data, "models": self.hashes}, sort_keys=True).encode()
             ).hexdigest()
-            if result.get("request_digest") not in {fingerprint, legacy}:
+            accepted = {fingerprint, legacy} if self.settings.device == "cpu" else {fingerprint}
+            if result.get("request_digest") not in accepted:
                 raise ValueError("作业编号已绑定其他输入")
             if result.get("schema_version") == 2:
                 return fingerprint, result

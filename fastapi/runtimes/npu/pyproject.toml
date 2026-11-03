@@ -1,0 +1,16 @@
+[project]
+name = "uu-classroom-vision-ascend-runtime"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "uu-smart-classroom-vision",
+    "onnxruntime-cann==1.24.4",
+]
+
+[tool.uv.sources]
+uu-smart-classroom-vision = { path = "../..", editable = true }
+
+[tool.uv]
+# 华为CANN运行时独立锁定，不能与默认CPU发行包混装。
+exclude-dependencies = ["onnxruntime", "opencv-python", "opencv-contrib-python"]
+environments = ["sys_platform == 'linux'"]

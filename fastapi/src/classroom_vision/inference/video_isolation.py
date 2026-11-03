@@ -151,6 +151,40 @@ class WindowsJob:
             self.api.CloseHandle(thread)
 
 
+def worker_environment(device):
+    allowed = {"PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "LANG", "LC_ALL"}
+    if device == "gpu":
+        allowed.update(
+            {"LD_LIBRARY_PATH", "CUDA_PATH", "CUDA_VISIBLE_DEVICES", "NVIDIA_VISIBLE_DEVICES"}
+        )
+    if device == "npu":
+        allowed.update(
+            {
+                "LD_LIBRARY_PATH",
+                "ASCEND_HOME_PATH",
+                "ASCEND_OPP_PATH",
+                "ASCEND_AICPU_PATH",
+                "ASCEND_CUSTOM_OPP_PATH",
+                "ASCEND_TOOLKIT_HOME",
+                "ASCEND_RT_VISIBLE_DEVICES",
+                "ASCEND_VISIBLE_DEVICES",
+                "TOOLCHAIN_HOME",
+            }
+        )
+    # 只继承目标驱动需要的变量；服务令牌、用户会话、数据库配置不传给解码子进程。
+    env = {key: value for key, value in os.environ.items() if key.upper() in allowed}
+    python_paths = [str(Path(__file__).resolve().parents[2])]
+    if device == "npu":
+        # CANN的GE/TBE编译依赖set_env.sh所配置的Python算子路径，保留运维加载的目录。
+        python_paths.extend(
+            path for path in os.environ.get("PYTHONPATH", "").split(os.pathsep) if path
+        )
+    env["PYTHONPATH"] = os.pathsep.join(dict.fromkeys(python_paths))
+    env["OPENBLAS_NUM_THREADS"] = "1"
+    env["OMP_NUM_THREADS"] = "1"
+    return env
+
+
 def run_bounded(command, payload, timeout, memory_mb, *, cpu_seconds):
     """先建立资源边界，再通过标准输入授权子进程开始处理。"""
     started = time.monotonic()
@@ -161,15 +195,7 @@ def run_bounded(command, payload, timeout, memory_mb, *, cpu_seconds):
             job = WindowsJob(memory_mb)
         elif sys.platform != "linux":
             raise OSError("当前系统没有已实现的视频资源边界")
-        # 子进程无需继承内部服务凭据或数据库配置。
-        env = {
-            k: v
-            for k, v in os.environ.items()
-            if k.upper() in {"PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "LANG", "LC_ALL"}
-        }
-        env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2])
-        env["OPENBLAS_NUM_THREADS"] = "1"
-        env["OMP_NUM_THREADS"] = "1"
+        env = worker_environment(payload.get("settings", {}).get("device", "cpu"))
         process = subprocess.Popen(
             command,
             stdin=subprocess.PIPE,

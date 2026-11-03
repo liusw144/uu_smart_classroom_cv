@@ -9,6 +9,25 @@ SPEC = importlib.util.spec_from_file_location("local_dev", Path(__file__).resolv
 
 
 class LocalEnvironmentTest(unittest.TestCase):
+    def test_vision_launch_selects_an_independent_accelerator_environment(self):
+        module=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(module)
+        self.assertNotIn('--project',module.vision_command({}))
+        for device in ('gpu','npu'):
+            command=module.vision_command({'VISION_DEVICE':device})
+            self.assertIn('runtimes/'+device,command)
+            self.assertIn('--frozen',command)
+        with self.assertRaises(SystemExit): module.vision_command({'VISION_DEVICE':'auto'})
+
+    def test_inference_device_parameters_reach_only_vision(self):
+        module=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(module)
+        values={'VISION_SERVICE_TOKEN':'fixture-token','EDGE_SERVICE_TOKEN':'node-only','EDGE_NODE_ID':'fixture-node','AI_SERVICE_TOKEN':'ai-only',
+                'VISION_DEVICE':'npu','VISION_DEVICE_ID':'2','VISION_CPU_THREADS':'3'}
+        vision=module.environment(values,target='vision')
+        for key in ('VISION_DEVICE','VISION_DEVICE_ID','VISION_CPU_THREADS'):
+            self.assertEqual(values[key],vision.get(key))
+            for target in ('backend','edge','teacher','admin','ai'):
+                self.assertNotIn(key,module.environment(values,target=target))
+
     def test_security_parameters_reach_only_their_runtime(self):
         module=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(module)
         values={'VISION_SERVICE_TOKEN':'fixture-token','EDGE_SERVICE_TOKEN':'node-only','EDGE_NODE_ID':'fixture-node','AI_SERVICE_TOKEN':'ai-only',

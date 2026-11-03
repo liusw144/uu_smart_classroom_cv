@@ -103,6 +103,8 @@ D:\self\uu_smart_classroom_cv\fastapi\.venv\Scripts\python.exe
 
 新增ops运维工具模块也使用自己的Python 3.12环境：在ops运行uv sync --frozen，IDEA选择ops/.venv/Scripts/python.exe，标记ops/src为Sources。证书工具、分段与容量命令见ops/README.md；候选容器操作见deploy/staging/README.md，不与FastAPI共用解释器。
 
+视觉推理默认CPU。在根`.env.local`配置`VISION_DEVICE=cpu|gpu|npu`、`VISION_DEVICE_ID=0`后，统一启动工具会选择默认CPU环境或`fastapi/runtimes/gpu`、`fastapi/runtimes/npu`的独立环境。gpu对应NVIDIA CUDA，npu对应华为昇腾CANN（Linux），需先准备对应驱动。IDEA解释器和详细配置见[推理设备配置](docs/guides/推理设备配置.md)；当前默认Docker镜像仍为CPU镜像，设置变量不能替代驱动及设备映射。
+
 **`src`才是源码根目录，`classroom_vision`是包。** `.venv`、`Scripts`、`Lib/site-packages`不能分别导入成项目模块。模块写着某个SDK名称但SDK列表没有对应解释器，也会导致导入标红。修正后重开项目，让IDEA重新加载与索引。全仓库的Project SDK仍为Java 21，Python SDK配置在各Python模块上。
 
 检查实际导入可在FastAPI目录运行：

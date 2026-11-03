@@ -113,7 +113,7 @@ def environment(values, test=False, target='backend'):
             result['VISION_SERVICE_TOKEN']=values['VISION_SERVICE_TOKEN']
             result['VISION_URL']='http://127.0.0.1:5000'
         if target=='vision':
-            for key in ('VISION_VIDEO_MEMORY_MB','VISION_VIDEO_TIMEOUT_SECONDS'):
+            for key in ('VISION_VIDEO_MEMORY_MB','VISION_VIDEO_TIMEOUT_SECONDS','VISION_DEVICE','VISION_DEVICE_ID','VISION_CPU_THREADS'):
                 if key in values: result[key]=values[key]
             result['VISION_APP_ENV']='development'
             result.update(VISION_ENGINE='onnx' if values.get('REAL_DEMO_ENABLED')=='true' else 'unavailable', VISION_MODEL_LOCK=str(ROOT/'models/demo-assets.lock.json'),VISION_MODELS_ROOT=str(ROOT/'runtime/models'),VISION_ASSET_CACHE=str(ROOT/'runtime/edge/assets'),VISION_RESULT_ROOT=str(ROOT/'runtime/edge/results'))
@@ -121,6 +121,15 @@ def environment(values, test=False, target='backend'):
             result.update(EDGE_NODE_ID=values['EDGE_NODE_ID'],EDGE_SERVICE_TOKEN=values['EDGE_SERVICE_TOKEN'],EDGE_CONTROL_URL='http://127.0.0.1:8089',EDGE_STATE_ROOT=str(ROOT/'runtime/edge'),EDGE_LEASE_SCHEMA=str(ROOT/'contracts/edge-lease.schema.json'))
         if target=='ai': result['LLAMA_API_KEY']=values['AI_SERVICE_TOKEN']
     return result
+
+
+def vision_command(values):
+    device=values.get('VISION_DEVICE','cpu')
+    if device not in {'cpu','gpu','npu'}:
+        raise SystemExit('VISION_DEVICE仅支持cpu、gpu、npu')
+    command=['uv','run','--frozen']
+    if device!='cpu': command.extend(['--project','runtimes/'+device])
+    return command+['python','-m','classroom_vision.server']
 
 
 def seed(values):
@@ -173,7 +182,7 @@ def main():
         'backend': ([str(Path(env['JAVA_HOME']) / 'bin/java.exe'), '-jar', 'api/target/classroom-api-0.1.0-SNAPSHOT.jar'], 'backend'),
         'teacher': (['npm.cmd' if os.name == 'nt' else 'npm', 'exec', '--', 'vite', 'apps/teacher', '--host', '127.0.0.1', '--port', '5173', '--strictPort'], 'frontend'),
         'admin': (['npm.cmd' if os.name == 'nt' else 'npm', 'exec', '--', 'vite', 'apps/admin', '--host', '127.0.0.1', '--port', '5172', '--strictPort'], 'frontend'),
-        'vision': (['uv', 'run', '--frozen', 'python', '-m', 'classroom_vision.server'], 'fastapi'),
+        'vision': (vision_command(values) if args.action=='vision' else [], 'fastapi'),
         'edge': (['uv','run','python','-m','classroom_edge.worker',*args.extra], 'edge'),
         'ai': ([str(ROOT/'runtime/vendor/llama/llama-server.exe'),'-m',str(ROOT/'runtime/models/Qwen3-0.6B-Q8_0.gguf'),'--host','127.0.0.1','--port','18188','--alias','qwen3-local','-c','2048','-t','4','--parallel','1','-ngl','0','--no-ui','--jinja'],'.'),
     }

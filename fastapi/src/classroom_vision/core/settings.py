@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     models_root: Path = Path("../runtime/models")
     asset_cache: Path = Path("../runtime/edge/assets")
     result_root: Path = Path("../runtime/edge/results")
+    device: Literal["cpu", "gpu", "npu"] = "cpu"
+    device_id: int = Field(default=0, ge=0, le=255)
     cpu_threads: int = Field(default=2, ge=1, le=8)
     sample_interval_ms: int = Field(default=250, ge=100, le=1000)
     max_frames: int = Field(default=32, ge=2, le=32)
@@ -28,6 +30,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_identity(self):
+        if self.device == "cpu" and self.device_id != 0:
+            raise ValueError("CPU模式的设备编号必须为0")
         if len(self.service_token.get_secret_value()) < 32:
             raise ValueError("内部服务凭据至少需要 32 个字符")
         if self.app_env == "production":

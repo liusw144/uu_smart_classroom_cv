@@ -81,6 +81,13 @@
       "local_delivery_note": "实际图片、标注图、统计、授权访问及边缘闭环已本机验证。"
     },
     {
+      "id": "M2-INFERENCE-DEVICE",
+      "title": "CPU、NVIDIA GPU 与华为昇腾 NPU 可配置推理",
+      "status": "partial",
+      "depends_on": ["M1-MODELS", "M2-VIDEO"],
+      "local_delivery_note": "默认CPU，GPU/CANN独立锁文件与设备选择已接入；当前验证CPU真实素材及加速错误路径，目标GPU/昇腾硬件、驱动隔离与容量未验收。"
+    },
+    {
       "id": "M2-VIDEO",
       "title": "视频、批量、摄像头、背压及容量基准",
       "status": "partial",
@@ -168,7 +175,7 @@
       "depends_on": [
         "M0-FOUNDATION"
       ],
-      "local_delivery_note": "GPU尚未采购，SLA未确认；已有样例基线不能替代目标测量。"
+      "local_delivery_note": "已记录可调整压测假设：300课堂每间10分钟、每小时一批、30分钟窗口，共6000片；正式SLA边界及GPU仍待确定，已有样例不能替代目标实测。"
     },
     {
       "id": "M3-CLASSROOM-EVALUATION",
