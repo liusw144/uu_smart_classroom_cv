@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class JdbcMediaRepository implements MediaRepository {
   public Page<MediaAsset> assets(Actor actor, String query, int page, int size) {
-    String where = " WHERE " + SCOPE + " AND filename LIKE ?";
+    String where = " WHERE " + SCOPE + " AND storage_state='READY' AND filename LIKE ?";
     long total =
         jdbc.queryForObject(
             "SELECT COUNT(*) FROM media_asset" + where, Long.class, args(actor, "%" + query + "%"));
@@ -24,11 +24,6 @@ public class JdbcMediaRepository implements MediaRepository {
         total,
         page,
         size);
-  }
-
-  public void deleteAsset(Actor actor, String id) {
-    if (jdbc.update("DELETE FROM media_asset WHERE " + SCOPE + " AND id=?", args(actor, id)) == 0)
-      throw ResourceProblem.missing();
   }
 
   public long taskJobCount(Actor actor, long taskId, String status) {
@@ -88,21 +83,12 @@ public class JdbcMediaRepository implements MediaRepository {
     return values.toArray();
   }
 
-  public void saveAsset(MediaAsset a) {
-    jdbc.update(
-        "INSERT INTO media_asset(id,tenant_id,owner_id,filename,content_type,size_bytes,sha256) VALUES (?,?,?,?,?,?,?)",
-        a.id(),
-        a.tenantId(),
-        a.ownerId(),
-        a.filename(),
-        a.contentType(),
-        a.size(),
-        a.sha256());
-  }
-
   public Optional<MediaAsset> asset(Actor actor, String id) {
     return jdbc
-        .query("SELECT * FROM media_asset WHERE " + SCOPE + " AND id=?", ASSET, args(actor, id))
+        .query(
+            "SELECT * FROM media_asset WHERE " + SCOPE + " AND storage_state='READY' AND id=?",
+            ASSET,
+            args(actor, id))
         .stream()
         .findFirst();
   }

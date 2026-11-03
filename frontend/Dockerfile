@@ -8,10 +8,13 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM nginx:1.28-alpine AS teacher
+FROM nginx:1.30.6-alpine-slim AS web
+RUN apk upgrade --no-cache
+
+FROM web AS teacher
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /workspace/apps/teacher/dist /usr/share/nginx/html
 
-FROM nginx:1.28-alpine AS admin
+FROM web AS admin
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /workspace/apps/admin/dist /usr/share/nginx/html

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "uu_smart_classroom_cv",
-  "stage": "local_trial_foundation",
+  "stage": "production_candidate_under_validation",
   "language": "zh-CN",
   "modules": {
     "backend": {
@@ -23,6 +23,11 @@
       "build": "uv sync --frozen && uv run ruff check . && uv run pytest",
       "runtime": "Python 3.12",
       "entry": "edge/README.md"
+    },
+    "ops": {
+      "build": "uv sync --frozen && uv run --frozen ruff check . && uv run --frozen pytest",
+      "runtime": "Python 3.12",
+      "entry": "ops/README.md"
     }
   },
   "context": [
@@ -42,10 +47,11 @@
     "contracts/edge-lease.schema.json"
   ],
   "production_blockers": [
-    "通用人物姿态模型已本机运行，课堂标注精度和行为规则尚未评测",
-    "本机开发节点令牌不能代替生产mTLS、证书轮换和登录限流",
-    "边缘短时离线已验证，长期断网、磁盘配额、保留期及批量容量尚未验收",
-    "可信生产证据验证器未实现，生产门禁始终拒绝放行",
-    "本机维护窗口隔离恢复已演练；四模式生产安装、混合云留校存储、生产灾备与多节点容量仍未验收"
+    "通用模型已运行，尚无人工课堂标注的逐类精度、跟踪及行为评测，也未完成AI事实一致性验收",
+    "目标为10校1000个摄像头来源及300课堂短片/录像后分析，尚无目标GPU和真实负载吞吐；完成窗口SLA未确认",
+    "当前上传由Java控制面保存原文件；云端管理且录像留校仍缺校内素材网关及跨站点元数据协议验收",
+    "镜像整改后双前端0条、Java/edge无High或Critical；视觉Debian/FFmpeg仍有已知风险，需完成可达性审定及补丁/替换，不能按扫描退出0放行",
+    "生产CA与密钥生命周期、长断网、多节点故障、四模式安装、告警及生产灾备/升级回滚尚未全部验收",
+    "外部签名发布验证器已实现，但缺少独立责任人签署且绑定干净Git版本的真实完整验收信封；未取得发布授权"
   ]
 }

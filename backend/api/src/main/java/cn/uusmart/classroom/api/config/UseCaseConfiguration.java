@@ -35,8 +35,9 @@ public class UseCaseConfiguration {
       TeachingService teaching,
       SchoolContentService catalog,
       VisionGateway vision,
-      cn.uusmart.classroom.application.pipeline.QueuedJobService queue) {
-    return new MediaService(repository, storage, teaching, catalog, vision, queue);
+      cn.uusmart.classroom.application.pipeline.QueuedJobService queue,
+      AssetLifecycle lifecycle) {
+    return new MediaService(repository, storage, teaching, catalog, vision, queue, lifecycle);
   }
 
   @Bean

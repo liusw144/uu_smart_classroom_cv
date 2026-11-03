@@ -209,12 +209,15 @@ class OnnxPoseEngine:
         if not self.lock.acquire(blocking=False):
             raise InferenceBusy("推理资源正忙")
         try:
+            if request.media_kind == "VIDEO":
+                from classroom_vision.inference.video_isolation import isolated_video
+
+                return isolated_video(self, request)
             return self._detect(request)
         finally:
             self.lock.release()
 
-    def _detect(self, request):
-        started = time.monotonic()
+    def cached_result(self, request):
         data = request.model_dump(mode="json")
         fingerprint = hashlib.sha256(
             json.dumps(
@@ -231,7 +234,16 @@ class OnnxPoseEngine:
             if result.get("request_digest") not in {fingerprint, legacy}:
                 raise ValueError("作业编号已绑定其他输入")
             if result.get("schema_version") == 2:
-                return result
+                return fingerprint, result
+        return fingerprint, None
+
+    def _detect(self, request):
+        started = time.monotonic()
+        fingerprint, cached = self.cached_result(request)
+        if cached is not None:
+            return cached
+        job = str(request.job_id)
+        metadata_path = self.settings.result_root / f"{job}.json"
         path = read_asset(self.settings.asset_cache, str(request.asset_id), request.input_sha256)
         frames = []
         kind = request.media_kind

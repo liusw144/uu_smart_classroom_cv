@@ -9,6 +9,22 @@ SPEC = importlib.util.spec_from_file_location("local_dev", Path(__file__).resolv
 
 
 class LocalEnvironmentTest(unittest.TestCase):
+    def test_security_parameters_reach_only_their_runtime(self):
+        module=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(module)
+        values={'VISION_SERVICE_TOKEN':'fixture-token','EDGE_SERVICE_TOKEN':'node-only','EDGE_NODE_ID':'fixture-node','AI_SERVICE_TOKEN':'ai-only',
+                'STORAGE_OWNER_BYTES':'16384','LOGIN_ACCOUNT_LIMIT':'3','VISION_VIDEO_MEMORY_MB':'512',
+                'VISION_VIDEO_TIMEOUT_SECONDS':'30'}
+        self.assertEqual('16384',module.environment(values)['STORAGE_OWNER_BYTES'])
+        self.assertEqual('3',module.environment(values)['LOGIN_ACCOUNT_LIMIT'])
+        vision=module.environment(values,target='vision')
+        self.assertEqual('512',vision['VISION_VIDEO_MEMORY_MB'])
+        self.assertEqual('30',vision['VISION_VIDEO_TIMEOUT_SECONDS'])
+        for target in ('vision','edge','teacher','admin','ai'):
+            env=module.environment(values,target=target)
+            self.assertNotIn('STORAGE_OWNER_BYTES',env)
+            self.assertNotIn('LOGIN_ACCOUNT_LIMIT',env)
+            if target!='vision': self.assertNotIn('VISION_VIDEO_MEMORY_MB',env)
+
     def test_wildcard_database_accounts_are_rejected_outside_ci(self):
         module=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(module)
         with patch.dict(module.os.environ,{'GITHUB_ACTIONS':'false'}),self.assertRaises(SystemExit):

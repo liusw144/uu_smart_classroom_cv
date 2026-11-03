@@ -13,7 +13,10 @@ from uuid import UUID
 import httpx
 from jsonschema import Draft202012Validator, FormatChecker
 
+from classroom_edge.credentials import secret
 from classroom_edge.locking import process_lock
+from classroom_edge.storage import DiskBudget, StorageFull
+from classroom_edge.tls import transport
 
 
 def digest(value):
@@ -64,10 +67,13 @@ class Outbox:
 
 
 class Worker:
-    def __init__(self, root, outbox, control, vision, validator=None, heartbeat_interval=30):
+    def __init__(
+        self, root, outbox, control, vision, validator=None, heartbeat_interval=30, budget=None
+    ):
         self.root, self.outbox, self.control, self.vision = root, outbox, control, vision
         self.validator = validator
         self.heartbeat_interval = heartbeat_interval
+        self.budget = budget
         (root / "assets").mkdir(parents=True, exist_ok=True)
         (root / "outbox-artifacts").mkdir(parents=True, exist_ok=True)
 
@@ -81,6 +87,8 @@ class Worker:
         return {"X-Job-Lease": str(UUID(lease["lease_id"]))}
 
     def claim(self):
+        if self.budget:
+            self.budget.preflight()
         response = self.control.post("/internal/v1/edge/claim")
         response.raise_for_status()
         lease = response.json()["data"]
@@ -95,6 +103,8 @@ class Worker:
 
     def cache(self, item):
         lease = item["lease"]
+        if self.budget:
+            self.budget.reserve(lease)
         target = self.root / "assets" / str(UUID(lease["asset_id"]))
         if target.is_file() and digest(target.read_bytes()) == lease["input_sha256"]:
             self.outbox.save(lease, "CACHED")
@@ -150,7 +160,7 @@ class Worker:
             raise ValueError("结果下载哈希不符")
         return result, artifact
 
-    def renew(self, lease):
+    def renew(self, lease, state="CACHED", result=None):
         response = self.control.post(self.endpoint(lease, "heartbeat"), headers=self.headers(lease))
         response.raise_for_status()
         updated = response.json()["data"]
@@ -172,10 +182,12 @@ class Worker:
         if datetime.fromisoformat(updated["lease_expires_at"]) <= datetime.now(UTC):
             raise ValueError("续租响应已过期")
         lease.update(updated)
-        self.outbox.save(lease, "CACHED")
+        self.outbox.save(lease, state, result)
 
     def infer(self, item):
         lease = item["lease"]
+        if self.budget:
+            self.budget.reserve(lease)
         self.try_renew(lease)
         if datetime.fromisoformat(lease["lease_expires_at"]) <= datetime.now(UTC):
             self.outbox.save(lease, "REJECTED")
@@ -195,9 +207,9 @@ class Worker:
             lease, "RESULT_READY", json.dumps(result, ensure_ascii=False, allow_nan=False)
         )
 
-    def try_renew(self, lease):
+    def try_renew(self, lease, state="CACHED", result=None):
         try:
-            self.renew(lease)
+            self.renew(lease, state, result)
         except httpx.TransportError:
             pass
         except httpx.HTTPStatusError as error:
@@ -246,8 +258,22 @@ class Worker:
                     self.infer(item)
                 elif item["state"] == "RESULT_READY" and phase in ("all", "deliver"):
                     self.deliver(item)
+            except StorageFull:
+                # 磁盘在领取后变满时保留原状态续租，不能把未缓存输入冒充CACHED。
+                self.try_renew(item["lease"], state=item["state"])
             except httpx.HTTPStatusError as error:
-                if error.response.status_code in (401, 403, 404, 409):
+                if (
+                    error.response.status_code == 413
+                    and error.response.json().get("error", {}).get("code")
+                    == "STORAGE_QUOTA_EXCEEDED"
+                ):
+                    if item["state"] == "RESULT_READY":
+                        self.try_renew(item["lease"], state="RESULT_READY", result=item["result"])
+                    raise
+                if error.response.status_code in (401, 403):
+                    # 身份轮换或吊销需要运维处理，不能丢弃尚未确认的结果。
+                    raise
+                elif error.response.status_code in (404, 409):
                     self.outbox.save(item["lease"], "REJECTED", item["result"])
                 elif 400 <= error.response.status_code < 500 and error.response.status_code != 429:
                     # 永久输入错误向管理端显式报告；管理端断网时保留待重试记录。
@@ -275,30 +301,72 @@ def main():
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
     control = httpx.Client(
         base_url=os.environ["EDGE_CONTROL_URL"],
+        verify=transport(
+            os.environ["EDGE_CONTROL_URL"],
+            os.environ,
+            "EDGE",
+            os.environ.get("EDGE_ENV", "development") in {"staging", "production"},
+        ),
         timeout=30,
         follow_redirects=False,
         trust_env=False,
         headers={
-            "Authorization": "Bearer " + os.environ["EDGE_SERVICE_TOKEN"],
+            "Authorization": "Bearer "
+            + secret(
+                os.environ,
+                "EDGE_SERVICE_TOKEN",
+                os.environ.get("EDGE_ENV", "development") in {"staging", "production"},
+            ),
             "X-Node-ID": os.environ["EDGE_NODE_ID"],
         },
     )
     vision = httpx.Client(
         base_url=os.environ["VISION_URL"],
+        verify=transport(
+            os.environ["VISION_URL"],
+            os.environ,
+            "VISION",
+            os.environ.get("EDGE_ENV", "development") in {"staging", "production"},
+        ),
         timeout=120,
         follow_redirects=False,
         trust_env=False,
-        headers={"Authorization": "Bearer " + os.environ["VISION_SERVICE_TOKEN"]},
+        headers={
+            "Authorization": "Bearer "
+            + secret(
+                os.environ,
+                "VISION_SERVICE_TOKEN",
+                os.environ.get("EDGE_ENV", "development") in {"staging", "production"},
+            )
+        },
     )
     with process_lock(root / "worker.lock"):
         outbox = Outbox(root / "outbox.db")
+        budget = DiskBudget(
+            root,
+            outbox,
+            limit_bytes=int(os.environ.get("EDGE_DISK_LIMIT_BYTES", str(20 * 1024**3))),
+            minimum_free=int(os.environ.get("EDGE_MINIMUM_FREE_BYTES", str(2 * 1024**3))),
+            retention=int(os.environ.get("EDGE_RETENTION_SECONDS", "3600")),
+        )
         worker = Worker(
-            root, outbox, control, vision, validator, heartbeat_interval=args.heartbeat_seconds
+            root,
+            outbox,
+            control,
+            vision,
+            validator,
+            heartbeat_interval=args.heartbeat_seconds,
+            budget=budget,
         )
         try:
             while True:
                 try:
+                    budget.collect()
                     worker.step(args.phase)
+                    atomic(
+                        root / "health.json",
+                        json.dumps({"updated_at": time.time(), **budget.status()}).encode(),
+                    )
                 except (httpx.HTTPError, ValueError, OSError):
                     print("边缘执行暂不可用，保留Outbox记录并等待重试。", flush=True)
                     if args.once:

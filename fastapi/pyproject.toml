@@ -11,14 +11,17 @@ dependencies = [
     "pydantic-settings==2.16.2",
     "rtmlib==0.0.15",
     "onnxruntime>=1.23,<2",
-    "opencv-python>=4.11,<5",
+    "opencv-python-headless==4.14.0.94",
     "numpy>=2.2,<3",
-    "opencv-contrib-python==4.14.0.94",
 ]
 
 [project.urls]
 Repository = "https://github.com/liusw144/uu_smart_classroom_cv"
 Issues = "https://github.com/liusw144/uu_smart_classroom_cv/issues"
+
+[tool.uv]
+# 推理不使用桌面GUI，统一cv2实现，避免多个OpenCV发行包覆盖同一命名空间。
+exclude-dependencies = ["opencv-python", "opencv-contrib-python"]
 
 [dependency-groups]
 dev = [

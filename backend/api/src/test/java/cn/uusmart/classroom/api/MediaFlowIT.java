@@ -33,6 +33,16 @@ class MediaFlowIT extends SchoolHttpITSupport {
     var uploaded = data(upload(png(), "admin.png", "image/png", admin, taskId));
     assertEquals(1101, uploaded.path("owner_id").asLong());
     assertEquals(
+        1,
+        jdbc.queryForObject(
+            "SELECT file_count FROM media_storage_usage WHERE tenant_id=101 AND owner_id=1101",
+            Integer.class));
+    assertEquals(
+        0,
+        jdbc.queryForObject(
+            "SELECT COUNT(*) FROM media_storage_usage WHERE tenant_id=101 AND owner_id=1199",
+            Integer.class));
+    assertEquals(
         200, call("GET", "/assets/" + uploaded.path("id").asText(), null, teacher).statusCode());
     assertEquals(404, upload(png(), "other.png", "image/png", other, taskId).statusCode());
   }

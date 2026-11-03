@@ -3,7 +3,7 @@
   "info": {
     "title": "智慧课堂业务接口",
     "version": "0.2.0",
-    "description": "本机最小业务版本：身份、学校隔离教务、账号、公告、目录及素材作业。真实模型与边缘协议未完成。"
+    "description": "本机及预发布接口；学校和负责人隔离，节点证书绑定，持久作业与容量准入；实际生产状态以验收记录为准。"
   },
   "servers": [
     {
@@ -48,6 +48,12 @@
           },
           "401": {
             "$ref": "#/components/responses/Error401"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
           }
         }
       }
@@ -2698,6 +2704,9 @@
           },
           "503": {
             "$ref": "#/components/responses/Error503"
+          },
+          "507": {
+            "$ref": "#/components/responses/Error507"
           }
         },
         "requestBody": {
@@ -2897,6 +2906,9 @@
           },
           "409": {
             "$ref": "#/components/responses/Error409"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
           }
         }
       }
@@ -3065,6 +3077,9 @@
           },
           "503": {
             "$ref": "#/components/responses/Error503"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
           }
         },
         "requestBody": {
@@ -3523,7 +3538,8 @@
           "503": {
             "$ref": "#/components/responses/Error503"
           }
-        }
+        },
+        "description": "预发布节点调用除edgeToken外必须通过原生TLS客户端证书及节点绑定核验；不接受转发证书头。"
       }
     },
     "/internal/v1/edge/jobs/{id}/asset": {
@@ -3594,7 +3610,8 @@
               "format": "uuid"
             }
           }
-        ]
+        ],
+        "description": "预发布节点调用除edgeToken外必须通过原生TLS客户端证书及节点绑定核验；不接受转发证书头。"
       }
     },
     "/internal/v1/edge/jobs/{id}/result": {
@@ -3696,7 +3713,8 @@
               }
             }
           }
-        }
+        },
+        "description": "预发布节点调用除edgeToken外必须通过原生TLS客户端证书及节点绑定核验；不接受转发证书头。"
       }
     },
     "/api/v1/detections/{id}/cancel": {
@@ -3942,7 +3960,7 @@
         "summary": "延长当前租约",
         "security": [
           {
-            "nodeToken": []
+            "edgeToken": []
           }
         ],
         "parameters": [
@@ -4001,7 +4019,8 @@
           "409": {
             "description": "租约失效或作业已结束"
           }
-        }
+        },
+        "description": "预发布节点调用除edgeToken外必须通过原生TLS客户端证书及节点绑定核验；不接受转发证书头。"
       }
     },
     "/internal/v1/edge/jobs/{job}/fail": {
@@ -4009,7 +4028,7 @@
         "summary": "报告推理失败",
         "security": [
           {
-            "nodeToken": []
+            "edgeToken": []
           }
         ],
         "parameters": [
@@ -4076,7 +4095,8 @@
               }
             }
           }
-        }
+        },
+        "description": "预发布节点调用除edgeToken外必须通过原生TLS客户端证书及节点绑定核验；不接受转发证书头。"
       }
     },
     "/api/v1/edge-nodes": {
@@ -4223,6 +4243,34 @@
       },
       "Error503": {
         "description": "依赖不可用",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error429": {
+        "description": "请求预算已耗尽，Retry-After为建议等待秒数",
+        "headers": {
+          "Retry-After": {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error507": {
+        "description": "存储剩余容量低于保护水位",
         "content": {
           "application/json": {
             "schema": {

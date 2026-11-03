@@ -3,6 +3,7 @@ package cn.uusmart.classroom.api.config;
 import cn.dev33.satoken.interceptor.SaInterceptor;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.uusmart.classroom.application.AccountRepository;
+import cn.uusmart.classroom.application.LoginBudget;
 import cn.uusmart.classroom.application.LoginService;
 import java.util.UUID;
 import org.springframework.context.annotation.Bean;
@@ -25,9 +26,10 @@ public class AuthConfiguration implements WebMvcConfigurer {
   }
 
   @Bean
-  LoginService loginService(AccountRepository accounts, BCryptPasswordEncoder passwords) {
+  LoginService loginService(
+      AccountRepository accounts, BCryptPasswordEncoder passwords, LoginBudget budget) {
     return new LoginService(
-        accounts, passwords::matches, passwords.encode(UUID.randomUUID().toString()));
+        accounts, passwords::matches, passwords.encode(UUID.randomUUID().toString()), budget);
   }
 
   @Override

@@ -11,6 +11,75 @@ from classroom_edge.locking import process_lock
 from classroom_edge.worker import Outbox, Worker
 
 
+def test_result_quota_pressure_does_not_turn_valid_result_into_failed_input(tmp_path):
+    calls = []
+
+    def reply(request):
+        calls.append(request.url.path)
+        if request.url.path.endswith("/result"):
+            return httpx.Response(413, json={"error": {"code": "STORAGE_QUOTA_EXCEEDED"}})
+        return httpx.Response(200, json={"data": job})
+
+    job = {
+        "job_id": str(uuid4()),
+        "lease_id": str(uuid4()),
+        "lease_expires_at": (datetime.now(UTC) + timedelta(minutes=5)).isoformat(),
+    }
+    outbox = Outbox(tmp_path / "outbox.db")
+    outbox.save(
+        job,
+        "RESULT_READY",
+        json.dumps(
+            {
+                "artifact_sha256": hashlib.sha256(b"proof").hexdigest(),
+                "artifact_content_type": "image/png",
+            }
+        ),
+    )
+    worker = Worker(
+        tmp_path,
+        outbox,
+        httpx.Client(base_url="http://control.test", transport=httpx.MockTransport(reply)),
+        None,
+    )
+    worker.artifact_path(job).write_bytes(b"proof")
+    with pytest.raises(httpx.HTTPStatusError):
+        worker.step("deliver")
+    assert outbox.pending()[0]["state"] == "RESULT_READY"
+    assert calls[0].endswith("/result") and calls[1].endswith("/heartbeat")
+    assert not any(path.endswith("/fail") for path in calls)
+    assert outbox.pending()[0]["result"] is not None
+    outbox.close()
+
+
+def test_revoked_credentials_preserve_unconfirmed_result_for_rotation(tmp_path):
+    job = {
+        "job_id": str(uuid4()),
+        "lease_id": str(uuid4()),
+        "lease_expires_at": (datetime.now(UTC) + timedelta(minutes=5)).isoformat(),
+    }
+    outbox = Outbox(tmp_path / "outbox.db")
+    result = {
+        "artifact_sha256": hashlib.sha256(b"proof").hexdigest(),
+        "artifact_content_type": "image/png",
+    }
+    outbox.save(job, "RESULT_READY", json.dumps(result))
+    worker = Worker(
+        tmp_path,
+        outbox,
+        httpx.Client(
+            base_url="http://control.test",
+            transport=httpx.MockTransport(lambda _: httpx.Response(401)),
+        ),
+        None,
+    )
+    worker.artifact_path(job).write_bytes(b"proof")
+    with pytest.raises(httpx.HTTPStatusError):
+        worker.step("deliver")
+    assert outbox.pending()[0]["state"] == "RESULT_READY"
+    outbox.close()
+
+
 def test_only_one_process_can_own_the_outbox(tmp_path):
     with (
         process_lock(tmp_path / "worker.lock"),

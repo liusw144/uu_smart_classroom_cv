@@ -12,6 +12,10 @@ def main():
     commands = [
         (root, [sys.executable, "scripts/quality_gate.py"]),
         (root, [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"]),
+        (root / "ops", ["uv", "sync", "--frozen"]),
+        (root / "ops", ["uv", "run", "--frozen", "ruff", "check", "."]),
+        (root / "ops", ["uv", "run", "--frozen", "ruff", "format", "--check", "."]),
+        (root / "ops", ["uv", "run", "--frozen", "pytest"]),
         (root / "backend", ["mvn.cmd" if os.name == "nt" else "mvn", "-s", ".mvn/settings.xml", "-B", "verify"]),
         (root / "frontend", ["npm.cmd" if os.name == "nt" else "npm", "ci"]),
         (root / "frontend", ["npm.cmd" if os.name == "nt" else "npm", "run", "verify"]),

@@ -32,10 +32,6 @@ public final class QueuedJobService {
   public DetectionJob submit(
       Actor actor, LessonTask task, MediaAsset asset, CatalogEntry model, String kind) {
     if (!models.version().equals(model.code())) throw ResourceProblem.invalid("该模型档案没有对应已锁定的推理版本");
-    String node =
-        pipeline
-            .availableNode(actor.tenantId())
-            .orElseThrow(() -> new ServiceUnavailable("本校没有启用的边缘节点"));
     String id = UUID.randomUUID().toString();
     pipeline.enqueue(
         new DetectionJob(
@@ -50,7 +46,6 @@ public final class QueuedJobService {
             "QUEUED",
             null,
             Instant.now()),
-        node,
         kind);
     return media.job(actor, id).orElseThrow(ResourceProblem::missing);
   }

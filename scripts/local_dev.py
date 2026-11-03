@@ -51,7 +51,7 @@ def initialize(values, account_host='127.0.0.1'):
         raise SystemExit('通配连接来源只允许GitHub临时服务容器；本机账号保持回环限制。')
     names = {'uu_classroom_local', 'uu_classroom_test'}
     found = mysql(values, "SELECT TABLE_SCHEMA,TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA IN ('uu_classroom_local','uu_classroom_test');")
-    allowed = {'flyway_schema_history', 'tenant', 'school_account', 'school_class', 'course', 'lesson_task', 'lesson_task_view', 'school_notice', 'operation_log', 'model_catalog', 'behavior_category', 'media_asset', 'detection_job', 'detection_job_view', 'analysis_report', 'edge_node'}
+    allowed = {'flyway_schema_history', 'tenant', 'school_account', 'school_class', 'course', 'lesson_task', 'lesson_task_view', 'school_notice', 'operation_log', 'model_catalog', 'behavior_category', 'media_asset', 'media_storage_usage', 'media_storage_cleanup', 'edge_node_certificate', 'dispatch_guard', 'detection_job', 'detection_job_view', 'analysis_report', 'edge_node'}
     for line in found.splitlines():
         if line.split('\t')[-1] not in allowed:
             raise SystemExit('目标专用库已有非本项目表，停止初始化，未修改数据。')
@@ -76,14 +76,19 @@ def initialize(values, account_host='127.0.0.1'):
 
 
 def environment(values, test=False, target='backend'):
-    prefixes=('DB_','TEST_DB_','REDIS_','TEST_REDIS_','BOOTSTRAP_','VISION_','CLASSROOM_','EDGE_','AI_','LLAMA_','MODEL_')
+    prefixes=('DB_','TEST_DB_','REDIS_','TEST_REDIS_','BOOTSTRAP_','VISION_','CLASSROOM_','EDGE_','AI_','LLAMA_','MODEL_','LOGIN_','STORAGE_','QUEUE_')
     result = {key:value for key,value in os.environ.items() if not key.startswith(prefixes)}
     allowed={'DB_USER','DB_PASSWORD','REDIS_HOST','REDIS_PORT','REDIS_PASSWORD','REDIS_DATABASE','BOOTSTRAP_PASSWORD','VISION_SERVICE_TOKEN'}
+    allowed.update({'QUEUE_SCHOOL_LIMIT','QUEUE_GLOBAL_LIMIT','LOGIN_BUDGET_NAMESPACE','LOGIN_ACCOUNT_LIMIT','LOGIN_SOURCE_LIMIT','LOGIN_GLOBAL_LIMIT','LOGIN_PARALLELISM','LOGIN_WINDOW_SECONDS','LOGIN_LEASE_SECONDS',
+                    'STORAGE_OWNER_BYTES','STORAGE_SCHOOL_BYTES','STORAGE_GLOBAL_BYTES','STORAGE_OWNER_FILES','STORAGE_SCHOOL_FILES','STORAGE_GLOBAL_FILES','STORAGE_MINIMUM_FREE_BYTES','STORAGE_PENDING_SECONDS','STORAGE_CLEANUP_DELAY_MS'})
     result.update({key:value for key,value in values.items() if key in allowed})
     database = 'uu_classroom_test' if test else 'uu_classroom_local'
     result['DB_URL'] = f"jdbc:mysql://{values.get('DB_HOST','127.0.0.1')}:{values.get('DB_PORT','3306')}/{database}?serverTimezone=UTC&characterEncoding=UTF-8"
     if test:
         result.update(DB_USER=values['TEST_DB_USER'], DB_PASSWORD=values['TEST_DB_PASSWORD'], BOOTSTRAP_ENABLED='false', REDIS_DATABASE=values['TEST_REDIS_DATABASE'])
+        temporary=ROOT/'.harness/test-tmp'
+        temporary.mkdir(parents=True,exist_ok=True)
+        result.update(TEMP=str(temporary),TMP=str(temporary))
     else:
         result['BOOTSTRAP_ENABLED'] = 'true'
     result.update(SERVER_ADDRESS='127.0.0.1', PYTHONUTF8='1', VISION_URL='http://127.0.0.1:5000', CLASSROOM_VISION_SERVICE_TOKEN=values['VISION_SERVICE_TOKEN'], CLASSROOM_REDIS_COMPATIBILITY_MODE='true')
@@ -108,6 +113,8 @@ def environment(values, test=False, target='backend'):
             result['VISION_SERVICE_TOKEN']=values['VISION_SERVICE_TOKEN']
             result['VISION_URL']='http://127.0.0.1:5000'
         if target=='vision':
+            for key in ('VISION_VIDEO_MEMORY_MB','VISION_VIDEO_TIMEOUT_SECONDS'):
+                if key in values: result[key]=values[key]
             result['VISION_APP_ENV']='development'
             result.update(VISION_ENGINE='onnx' if values.get('REAL_DEMO_ENABLED')=='true' else 'unavailable', VISION_MODEL_LOCK=str(ROOT/'models/demo-assets.lock.json'),VISION_MODELS_ROOT=str(ROOT/'runtime/models'),VISION_ASSET_CACHE=str(ROOT/'runtime/edge/assets'),VISION_RESULT_ROOT=str(ROOT/'runtime/edge/results'))
         if target=='edge':
@@ -146,7 +153,7 @@ def main():
     parser.add_argument('extra', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     values = load_values()
-    if args.action in {'backend','edge'} and (ROOT/'runtime/maintenance.lock').exists():
+    if args.action in {'backend','edge','vision'} and (ROOT/'runtime/maintenance.lock').exists():
         raise SystemExit('项目处于备份恢复维护窗口，拒绝启动写入服务。')
     if args.action == 'ai':
         lock=json.loads((ROOT/'models/demo-assets.lock.json').read_text(encoding='utf-8'))
@@ -166,7 +173,7 @@ def main():
         'backend': ([str(Path(env['JAVA_HOME']) / 'bin/java.exe'), '-jar', 'api/target/classroom-api-0.1.0-SNAPSHOT.jar'], 'backend'),
         'teacher': (['npm.cmd' if os.name == 'nt' else 'npm', 'exec', '--', 'vite', 'apps/teacher', '--host', '127.0.0.1', '--port', '5173', '--strictPort'], 'frontend'),
         'admin': (['npm.cmd' if os.name == 'nt' else 'npm', 'exec', '--', 'vite', 'apps/admin', '--host', '127.0.0.1', '--port', '5172', '--strictPort'], 'frontend'),
-        'vision': (['uv', 'run', 'uvicorn', 'classroom_vision.main:create_app', '--factory', '--host', '127.0.0.1', '--port', '5000'], 'fastapi'),
+        'vision': (['uv', 'run', '--frozen', 'python', '-m', 'classroom_vision.server'], 'fastapi'),
         'edge': (['uv','run','python','-m','classroom_edge.worker',*args.extra], 'edge'),
         'ai': ([str(ROOT/'runtime/vendor/llama/llama-server.exe'),'-m',str(ROOT/'runtime/models/Qwen3-0.6B-Q8_0.gguf'),'--host','127.0.0.1','--port','18188','--alias','qwen3-local','-c','2048','-t','4','--parallel','1','-ngl','0','--no-ui','--jinja'],'.'),
     }

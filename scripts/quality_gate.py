@@ -64,24 +64,25 @@ def workflow_errors(root:Path)->list[str]:
     return errors
 
 
-def production_errors(root: Path) -> list[str]:
+def production_errors(root: Path, trust_key: Path | None = None) -> list[str]:
     manifest = root / "harness/manifest.json"
     if not manifest.exists():
         return ["缺少工程清单及生产验收证据"]
     blockers = json.loads(manifest.read_text(encoding="utf-8")).get("production_blockers", [])
     errors = [f"生产阻塞：{item}" for item in blockers]
-    errors.append("可信生产证据验证器尚未实现：本地文件及哈希不能作为生产放行依据，当前仅允许本机业务验收")
     evidence = root / "harness/release-evidence.json"
     if not evidence.exists():
         return errors + ["缺少 harness/release-evidence.json，不允许宣称生产就绪"]
-    data = json.loads(evidence.read_text(encoding="utf-8"))
-    for key in ["model", "tenant_isolation", "recovery", "capacity", "deployment", "approval"]:
-        record = data.get(key, {})
-        path = root / record.get("path", "__missing__")
-        if not path.is_file() or path.resolve().is_relative_to(root.resolve()) is False:
-            errors.append(f"生产证据缺失：{key}")
-        elif hashlib.sha256(path.read_bytes()).hexdigest() != record.get("sha256"):
-            errors.append(f"生产证据校验失败：{key}")
+    if trust_key is None:
+        return errors+["缺少仓库外独立发布公钥，不能用本地文件及哈希自行授权生产"]
+    import os
+    import subprocess
+    python=root/'ops/.venv'/('Scripts/python.exe' if os.name=='nt' else 'bin/python')
+    if not python.is_file():return errors+["请先在ops中使用uv sync --frozen安装独立发布验证器"]
+    result=subprocess.run([str(python),'-m','classroom_ops.release','--root',str(root),
+                           '--envelope',str(evidence),'--trust-key',str(trust_key)],
+                          cwd=root/'ops',capture_output=True,text=True,encoding='utf-8',timeout=30)
+    if result.returncode:errors.append("外部签名/版本/材料验证拒绝："+result.stderr.strip()[:1000])
     return errors
 
 
@@ -89,10 +90,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="检查工程边界与生产证据")
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--production", action="store_true")
+    parser.add_argument("--release-key", type=Path)
     args = parser.parse_args()
     root = args.root.resolve()
     required = ["README.md", "AGENTS.md", "harness/manifest.json", "docs/project-status.md", "contracts/business.openapi.json", "contracts/detection-request.schema.json"]
-    for module, lock in [("backend", "pom.xml"), ("frontend", "package-lock.json"), ("fastapi", "uv.lock"),("edge","uv.lock")]:
+    for module, lock in [("backend", "pom.xml"), ("frontend", "package-lock.json"), ("fastapi", "uv.lock"),("edge","uv.lock"),("ops","uv.lock")]:
         required.extend([f"{module}/AGENTS.md", f"{module}/README.md", f"{module}/{lock}"])
     errors = [f"缺少工程文件：{name}" for name in required if not (root / name).is_file()]
     errors.extend(scan_sources(root))
@@ -103,7 +105,7 @@ def main() -> int:
         except json.JSONDecodeError as error:
             errors.append(f"契约 JSON 无效：{path.name} {error}")
     if args.production:
-        errors.extend(production_errors(root))
+        errors.extend(production_errors(root,args.release_key))
     print(json.dumps({"profile": "production" if args.production else "foundation", "passed": not errors, "errors": errors}, ensure_ascii=False, indent=2))
     return 1 if errors else 0
 

@@ -7,6 +7,7 @@ import cn.uusmart.classroom.application.AccountRepository;
 import cn.uusmart.classroom.application.AuthenticationFailed;
 import cn.uusmart.classroom.application.LoginService;
 import cn.uusmart.classroom.domain.Account;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -35,8 +36,14 @@ public class AuthController {
   public record LoginView(String accessToken, long expiresIn, UserView user) {}
 
   @PostMapping("/login")
-  public ApiResponse<LoginView> login(@Valid @RequestBody LoginRequest request) {
-    Account account = login.login(request.schoolCode(), request.username(), request.password());
+  public ApiResponse<LoginView> login(
+      @Valid @RequestBody LoginRequest request, HttpServletRequest connection) {
+    Account account =
+        login.login(
+            request.schoolCode(),
+            request.username(),
+            request.password(),
+            connection.getRemoteAddr());
     StpUtil.login(account.id());
     StpUtil.getSession().set("tenant_id", account.tenantId());
     return new ApiResponse<>(

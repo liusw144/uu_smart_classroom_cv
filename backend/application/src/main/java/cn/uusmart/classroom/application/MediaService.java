@@ -23,9 +23,8 @@ public final class MediaService {
   }
 
   public void deleteAsset(Actor actor, String id) {
-    var asset = asset(actor, id);
-    repository.deleteAsset(actor, id);
-    storage.remove(asset.tenantId(), asset.id());
+    asset(actor, id);
+    lifecycle.delete(actor, id);
   }
 
   private final MediaRepository repository;
@@ -34,6 +33,7 @@ public final class MediaService {
   private final SchoolContentService catalog;
   private final VisionGateway vision;
   private final QueuedJobService queue;
+  private final AssetLifecycle lifecycle;
 
   public MediaService(
       MediaRepository repository,
@@ -41,13 +41,15 @@ public final class MediaService {
       TeachingService teaching,
       SchoolContentService catalog,
       VisionGateway vision,
-      QueuedJobService queue) {
+      QueuedJobService queue,
+      AssetLifecycle lifecycle) {
     this.repository = repository;
     this.storage = storage;
     this.teaching = teaching;
     this.catalog = catalog;
     this.vision = vision;
     this.queue = queue;
+    this.lifecycle = lifecycle;
   }
 
   public MediaAsset upload(Actor actor, String filename, String type, byte[] bytes) {
@@ -81,13 +83,7 @@ public final class MediaService {
       throw new IllegalStateException(error);
     }
     var asset = new MediaAsset(id, actor.tenantId(), ownerId, leaf, type, bytes.length, hash);
-    storage.write(actor.tenantId(), id, bytes);
-    try {
-      repository.saveAsset(asset);
-    } catch (RuntimeException error) {
-      storage.remove(actor.tenantId(), id);
-      throw error;
-    }
+    lifecycle.create(asset, bytes);
     return asset;
   }
 

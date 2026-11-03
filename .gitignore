@@ -36,6 +36,9 @@ coverage/
 # 本地 AI 上下文与执行记录
 .harness/
 .superpowers/
+/harness/release-evidence.json
+/deploy/staging/control.env
+/deploy/staging/edge.env
 
 # 业务素材、模型权重与数据库产物
 /runtime/

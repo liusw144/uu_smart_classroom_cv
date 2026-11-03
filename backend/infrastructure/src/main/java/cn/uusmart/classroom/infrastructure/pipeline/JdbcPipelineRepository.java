@@ -7,13 +7,16 @@ import cn.uusmart.classroom.domain.pipeline.*;
 import java.sql.*;
 import java.time.Instant;
 import java.util.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.*;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public class JdbcPipelineRepository implements PipelineRepository {
   private final JdbcTemplate jdbc;
+  private final int schoolLimit, globalLimit;
   private static final String SELECT =
       "SELECT j.*,a.sha256 AS input_sha256,a.filename AS asset_filename,a.content_type AS asset_type,a.size_bytes AS asset_size FROM detection_job j JOIN media_asset a ON a.id=j.asset_id AND a.tenant_id=j.tenant_id AND a.owner_id=j.owner_id ";
   private static final RowMapper<StoredJob> JOB =
@@ -41,8 +44,15 @@ public class JdbcPipelineRepository implements PipelineRepository {
               r.getString("result_json"),
               r.getString("artifact_content_type"));
 
-  public JdbcPipelineRepository(JdbcTemplate jdbc) {
+  public JdbcPipelineRepository(
+      JdbcTemplate jdbc,
+      @Value("${classroom.queue.school-limit:300}") int schoolLimit,
+      @Value("${classroom.queue.global-limit:3000}") int globalLimit) {
+    if (schoolLimit < 1 || globalLimit < schoolLimit || globalLimit > 100000)
+      throw new IllegalArgumentException("队列容量配置无效");
     this.jdbc = jdbc;
+    this.schoolLimit = schoolLimit;
+    this.globalLimit = globalLimit;
   }
 
   public Optional<NodeCredential> node(String id) {
@@ -61,14 +71,39 @@ public class JdbcPipelineRepository implements PipelineRepository {
   public Optional<String> availableNode(long tenant) {
     return jdbc
         .query(
-            "SELECT id FROM edge_node WHERE tenant_id=? AND enabled=true AND last_seen_at>=DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 90 SECOND) ORDER BY id LIMIT 1",
+            "SELECT n.id FROM edge_node n LEFT JOIN detection_job j ON j.tenant_id=n.tenant_id AND j.node_id=n.id AND j.status IN ('QUEUED','RUNNING') WHERE n.tenant_id=? AND n.enabled=true AND n.last_seen_at>=DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 90 SECOND) GROUP BY n.id,n.max_pending HAVING COUNT(j.id)<n.max_pending ORDER BY COUNT(j.id),n.id LIMIT 1",
             (r, n) -> r.getString("id"),
             tenant)
         .stream()
         .findFirst();
   }
 
-  public void enqueue(DetectionJob j, String node, String kind) {
+  @Transactional
+  public void enqueue(DetectionJob j, String kind) {
+    jdbc.queryForObject("SELECT id FROM dispatch_guard WHERE id=1 FOR UPDATE", Integer.class);
+    recoverLocked();
+    long global =
+        jdbc.queryForObject(
+            "SELECT COUNT(*) FROM detection_job WHERE status IN ('QUEUED','RUNNING')", Long.class);
+    long school =
+        jdbc.queryForObject(
+            "SELECT COUNT(*) FROM detection_job WHERE tenant_id=? AND status IN ('QUEUED','RUNNING')",
+            Long.class,
+            j.tenantId());
+    if (global >= globalLimit || school >= schoolLimit) throw new RequestThrottled(5);
+    if (jdbc.queryForObject(
+            "SELECT COUNT(*) FROM edge_node WHERE tenant_id=? AND enabled=true AND last_seen_at>=DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 90 SECOND)",
+            Long.class,
+            j.tenantId())
+        == 0) throw new ServiceUnavailable("本校没有可用的边缘节点");
+    String node = availableNode(j.tenantId()).orElseThrow(() -> new RequestThrottled(5));
+    var active =
+        jdbc.queryForList(
+            "SELECT id FROM edge_node WHERE tenant_id=? AND id=? AND enabled=true AND last_seen_at>=DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 90 SECOND) FOR UPDATE",
+            String.class,
+            j.tenantId(),
+            node);
+    if (active.isEmpty()) throw new ServiceUnavailable("本校没有可用的边缘节点");
     jdbc.update(
         "INSERT INTO detection_job(id,tenant_id,owner_id,task_id,asset_id,model_id,model_version,status,created_at,node_id,media_kind) VALUES (?,?,?,?,?,?,?,'QUEUED',?,?,?)",
         j.id(),
@@ -81,6 +116,37 @@ public class JdbcPipelineRepository implements PipelineRepository {
         Timestamp.from(j.createdAt()),
         node,
         kind);
+  }
+
+  @Scheduled(
+      fixedDelayString = "${classroom.queue.maintenance-ms:30000}",
+      initialDelayString = "${classroom.queue.maintenance-ms:30000}")
+  @Transactional
+  public void recoverAssignments() {
+    jdbc.queryForObject("SELECT id FROM dispatch_guard WHERE id=1 FOR UPDATE", Integer.class);
+    recoverLocked();
+  }
+
+  private void recoverLocked() {
+    jdbc.update(
+        "UPDATE detection_job SET status='FAILED',error_code='LEASE_EXHAUSTED' WHERE status='RUNNING' AND lease_until<CURRENT_TIMESTAMP(6) AND attempt>=3");
+    jdbc.update(
+        "UPDATE detection_job SET status='FAILED',error_code='QUEUE_EXPIRED' WHERE status='QUEUED' AND created_at<DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 1 DAY)");
+    var stale =
+        jdbc.queryForList(
+            "SELECT j.id,j.tenant_id,j.node_id FROM detection_job j JOIN edge_node n ON n.tenant_id=j.tenant_id AND n.id=j.node_id WHERE (n.enabled=false OR n.last_seen_at<DATE_SUB(CURRENT_TIMESTAMP(6),INTERVAL 90 SECOND) OR n.last_seen_at IS NULL) AND (j.status='QUEUED' OR (j.status='RUNNING' AND j.lease_until<CURRENT_TIMESTAMP(6))) ORDER BY j.created_at,j.id LIMIT 100");
+    for (var job : stale) {
+      long tenant = ((Number) job.get("tenant_id")).longValue();
+      var replacement = availableNode(tenant);
+      if (replacement.isEmpty()) continue;
+      // 仅对仍过期或未领取的旧分配更新；旧节点的原租约再也不能回传覆盖。
+      jdbc.update(
+          "UPDATE detection_job SET node_id=?,status='QUEUED',lease_id=NULL,lease_until=NULL,error_code=NULL WHERE id=? AND tenant_id=? AND node_id=? AND (status='QUEUED' OR (status='RUNNING' AND lease_until<CURRENT_TIMESTAMP(6)))",
+          replacement.get(),
+          job.get("id"),
+          tenant,
+          job.get("node_id"));
+    }
   }
 
   public cn.uusmart.classroom.application.Page<EdgeNodeStatus> nodes(

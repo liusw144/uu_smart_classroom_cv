@@ -1,0 +1,138 @@
+name: uu-classroom-staging
+
+# 候选受控部署：外部数据库/Redis先完成初始化，不能把此文件当作已通过生产验收。
+services:
+  teacher:
+    image: ${TEACHER_IMAGE:?必须提供教师端镜像}
+    user: '10001:10001'
+    entrypoint: [nginx, -g, 'daemon off;']
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 1
+    tmpfs: ['/tmp:size=64m,mode=1777']
+    ports: ['127.0.0.1:8444:8443']
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${UI_CERTS:?缺少前端TLS证书目录}:/certs:ro
+    depends_on: [backend]
+    logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
+    restart: unless-stopped
+
+  admin:
+    image: ${ADMIN_IMAGE:?必须提供管理端镜像}
+    user: '10001:10001'
+    entrypoint: [nginx, -g, 'daemon off;']
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 1
+    tmpfs: ['/tmp:size=64m,mode=1777']
+    ports: ['127.0.0.1:8445:8443']
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${UI_CERTS}:/certs:ro
+    depends_on: [backend]
+    logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
+    restart: unless-stopped
+
+  backend:
+    image: ${BACKEND_IMAGE:?必须提供已构建镜像}
+    user: '10001:10001'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 256
+    mem_limit: 2g
+    cpus: 2
+    tmpfs: ['/tmp:size=256m,mode=1777']
+    env_file: [./control.env]
+    environment:
+      SPRING_PROFILES_ACTIVE: staging
+      SPRING_CONFIG_IMPORT: configtree:/run/secrets/
+      CONTROL_TLS_CERT: /certs/server.crt
+      CONTROL_TLS_KEY: /certs/server.key
+      NODE_TLS_CA: /certs/ca.crt
+      CLASSROOM_ASSETS_ROOT: /state/assets
+      CLASSROOM_ARTIFACT_ROOT: /state/artifacts
+    ports: ['127.0.0.1:8443:8443']
+    volumes:
+      - ${CONTROL_STATE:?缺少控制面存储目录}:/state
+      - ${CONTROL_CERTS:?缺少控制面证书目录}:/certs:ro
+    secrets: [DB_PASSWORD, REDIS_PASSWORD, EDGE_SERVICE_TOKEN, VISION_SERVICE_TOKEN]
+    logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
+    restart: unless-stopped
+
+  vision:
+    image: ${VISION_IMAGE:?必须提供已构建镜像}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 4g
+    cpus: 4
+    tmpfs: ['/tmp:size=128m,mode=1777']
+    environment:
+      VISION_APP_ENV: staging
+      VISION_ENGINE: onnx
+      VISION_SERVICE_TOKEN_FILE: /run/secrets/VISION_SERVICE_TOKEN
+      VISION_TLS_CA: /certs/ca.crt
+      VISION_TLS_CERT: /certs/server.crt
+      VISION_TLS_KEY: /certs/server.key
+      VISION_MODEL_LOCK: /models/demo-assets.lock.json
+      VISION_MODELS_ROOT: /models/weights
+      VISION_ASSET_CACHE: /state/assets
+      VISION_RESULT_ROOT: /state/results
+    volumes:
+      - ${EDGE_STATE:?缺少本节点数据目录}:/state
+      - ${VISION_CERTS:?缺少视觉服务证书目录}:/certs:ro
+      - ${MODELS:?缺少核验后的模型目录}:/models:ro
+    secrets: [VISION_SERVICE_TOKEN]
+    logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
+    restart: unless-stopped
+
+  edge:
+    image: ${EDGE_IMAGE:?必须提供已构建镜像}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    mem_limit: 512m
+    cpus: 1
+    tmpfs: ['/tmp:size=64m,mode=1777']
+    env_file: [./edge.env]
+    environment:
+      EDGE_ENV: staging
+      EDGE_STATE_ROOT: /state
+      EDGE_SERVICE_TOKEN_FILE: /run/secrets/EDGE_SERVICE_TOKEN
+      VISION_SERVICE_TOKEN_FILE: /run/secrets/VISION_SERVICE_TOKEN
+      EDGE_TLS_CA: /certs/control-ca.crt
+      EDGE_TLS_CERT: /certs/node.crt
+      EDGE_TLS_KEY: /certs/node.key
+      VISION_TLS_CA: /certs/vision-ca.crt
+      VISION_TLS_CERT: /certs/vision-client.crt
+      VISION_TLS_KEY: /certs/vision-client.key
+      EDGE_LEASE_SCHEMA: /contracts/edge-lease.schema.json
+    volumes:
+      - ${EDGE_STATE}:/state
+      - ${EDGE_CERTS:?缺少节点客户端证书}:/certs:ro
+      - ../../contracts:/contracts:ro
+    secrets: [EDGE_SERVICE_TOKEN, VISION_SERVICE_TOKEN]
+    depends_on: [vision]
+    healthcheck:
+      test: [CMD, python, -c, "import json,time; assert time.time()-json.load(open('/state/health.json'))['updated_at']<180"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: {driver: json-file, options: {max-size: 10m, max-file: '3'}}
+    restart: unless-stopped
+
+secrets:
+  DB_PASSWORD: {file: '${SECRETS_DIR:?缺少凭据目录}/DB_PASSWORD'}
+  REDIS_PASSWORD: {file: '${SECRETS_DIR}/REDIS_PASSWORD'}
+  EDGE_SERVICE_TOKEN: {file: '${SECRETS_DIR}/EDGE_SERVICE_TOKEN'}
+  VISION_SERVICE_TOKEN: {file: '${SECRETS_DIR}/VISION_SERVICE_TOKEN'}

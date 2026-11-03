@@ -43,6 +43,8 @@ Compose 和 Dockerfile 引用的 MySQL、Redis、JDK、Node、Python 与 Nginx �
 
 YOLOX、MMPose、RTMLib的仓库代码分别遵循其上游Apache-2.0许可；模型权重和训练数据的授权须独立检查。Qwen官方GGUF页面声明Apache-2.0；llama.cpp为MIT。上游视频/图片仅用于本机验证，不因位于开源仓库就声明取得本项目Apache再分发许可。本次公开文档不附这些原始媒体。
 
-视觉新增依赖：RTMLib 0.0.15、ONNX Runtime 1.31.1、OpenCV Python及Contrib 4.14.0.94、NumPy 2.5.4；实际版本以fastapi/uv.lock为准。edge独立依赖HTTPX、jsonschema，版本见edge/uv.lock。依赖包附带的LICENSE/NOTICE应随实际发行物收集。FFmpeg使用本机已有可执行程序，不随源码嵌入其二进制；发布其二进制前需按具体构建选项核对许可。
+视觉新增依赖：RTMLib 0.0.15、ONNX Runtime 1.31.1、opencv-python-headless 4.14.0.94、NumPy 2.5.4；当前只安装一个headless OpenCV发行包，已移除GUI/Contrib重复包。实际版本以fastapi/uv.lock为准。edge独立依赖HTTPX、jsonschema，版本见edge/uv.lock；ops另有cryptography，版本见ops/uv.lock。依赖包附带的LICENSE/NOTICE应随实际发行物收集。
+
+源码仓库不嵌入FFmpeg二进制；本轮视觉候选容器通过Debian安装FFmpeg及其系统依赖。分发这些容器时，需要保留每个实际包的版权/许可，并根据FFmpeg具体构建配置履行相应源码提供等要求；不能仅附本项目Apache许可。当前镜像还有未完成的依赖风险整改，不作为正式发行物发布。
 
 不得将学生素材、可识别身份的信息或未经授权的图片作为公开测试数据提交。

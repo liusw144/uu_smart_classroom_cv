@@ -1,11 +1,11 @@
-"""维护工具通过系统锁确认边缘执行器已经停止。"""
+"""维护工具通过系统锁确认边缘执行器或视觉写入进程已经停止。"""
 
 from contextlib import contextmanager
 import os
 
 
 @contextmanager
-def stopped_edge_lock(path):
+def stopped_edge_lock(path, component="edge"):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a+b") as handle:
         if path.stat().st_size == 0:
@@ -22,7 +22,7 @@ def stopped_edge_lock(path):
 
                 fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError as error:
-            raise RuntimeError("边缘执行器仍在运行，请先停止edge再备份") from error
+            raise RuntimeError("写入进程仍在运行，请先停止" + component + "再备份") from error
         try:
             yield
         finally:

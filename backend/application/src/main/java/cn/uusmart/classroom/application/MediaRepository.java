@@ -6,11 +6,7 @@ import java.util.Optional;
 public interface MediaRepository {
   Page<MediaAsset> assets(Actor actor, String query, int page, int size);
 
-  void saveAsset(MediaAsset asset);
-
   Optional<MediaAsset> asset(Actor actor, String id);
-
-  void deleteAsset(Actor actor, String id);
 
   long taskJobCount(Actor actor, long taskId, String status);
 

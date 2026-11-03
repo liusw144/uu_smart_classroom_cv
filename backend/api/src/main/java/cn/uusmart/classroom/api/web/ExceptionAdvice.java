@@ -17,6 +17,22 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ExceptionAdvice {
+  @ExceptionHandler(cn.uusmart.classroom.application.StorageLimit.class)
+  ResponseEntity<?> storageLimit(cn.uusmart.classroom.application.StorageLimit error) {
+    return response(
+        error.capacity() ? 507 : 413,
+        error.capacity() ? "STORAGE_CAPACITY_UNAVAILABLE" : "STORAGE_QUOTA_EXCEEDED",
+        error.getMessage());
+  }
+
+  @ExceptionHandler(cn.uusmart.classroom.application.RequestThrottled.class)
+  ResponseEntity<?> throttled(cn.uusmart.classroom.application.RequestThrottled error) {
+    var body = response(429, "TOO_MANY_REQUESTS", error.getMessage());
+    return ResponseEntity.status(429)
+        .header("Retry-After", Long.toString(error.retryAfter()))
+        .body(body.getBody());
+  }
+
   @ExceptionHandler(cn.uusmart.classroom.application.ServiceUnavailable.class)
   ResponseEntity<?> unavailable(cn.uusmart.classroom.application.ServiceUnavailable error) {
     return response(503, "SERVICE_UNAVAILABLE", error.getMessage());

@@ -2,6 +2,15 @@
   "schema_version": 1,
   "tasks": [
     {
+      "id": "M0-IDEA-QUICKSTART",
+      "title": "统一IDEA导入、启动与调试文档",
+      "status": "implemented",
+      "depends_on": [
+        "M0-FOUNDATION"
+      ],
+      "local_delivery_note": "根README为完整快速开始，原IDEA指南和快速开始.md保留导航；仅完成文档整合。"
+    },
+    {
       "id": "M0-FOUNDATION",
       "title": "独立模块与 Harness 工程基础",
       "status": "implemented",
@@ -32,7 +41,7 @@
       "depends_on": [
         "M1-TEACHING"
       ],
-      "local_delivery_note": "持久作业、租约/自动续租、取消、幂等已本机验证；生产容量仍未验收。"
+      "local_delivery_note": "学校/全局/节点待执行限额、单槽租约、故障重分配及旧回传隔离已验证；300次HTTP入队通过不代表300路实际推理。"
     },
     {
       "id": "M1-ASSETS",
@@ -41,7 +50,7 @@
       "depends_on": [
         "M1-TEACHING"
       ],
-      "local_delivery_note": "本机PNG/JPEG/MP4素材ID、授权存储及引用保护；自动保留期待实现。"
+      "local_delivery_note": "素材配额、持久删除账本和产物物理预算已实现，边缘终态保留回收已验证；云端控制面下的留校素材网关仍待实现。"
     },
     {
       "id": "M1-EDGE",
@@ -50,7 +59,7 @@
       "depends_on": [
         "M1-JOBS"
       ],
-      "local_delivery_note": "增加90秒在线判定、本校节点状态页、推理前/期间续租、Outbox互斥与断网恢复；生产mTLS/长期断网仍未完成。"
+      "local_delivery_note": "节点原生mTLS、数据库绑定/吊销/轮换、持久磁盘预算、终态保留回收、401/配额重试和故障重分配已有自动验证；生产CA及长断网仍待验收。"
     },
     {
       "id": "M1-MODELS",
@@ -94,8 +103,7 @@
       "title": "四模式安装、升级、恢复及证书轮换",
       "status": "partial",
       "depends_on": [
-        "M2-VIDEO",
-        "M2-REPORTS"
+        "M0-FOUNDATION"
       ],
       "local_delivery_note": "补维护窗口备份和全新隔离库恢复，14表2视图107文件已演练；四模式安装、生产灾备及升级回滚未验收。"
     },
@@ -115,6 +123,61 @@
         "M1-IMAGE"
       ],
       "local_delivery_note": "详见tasks/M2-TRIAL-READINESS.md；未宣称生产就绪或远端CI已通过。"
+    },
+    {
+      "id": "SECURITY-REMEDIATION-20261103",
+      "title": "登录预算、素材配额与视频资源隔离",
+      "status": "implemented_local",
+      "depends_on": [
+        "M2-TRIAL-READINESS"
+      ],
+      "local_delivery_note": "详见tasks/SECURITY-REMEDIATION-20261103.md；三项扫描问题本机修复验收通过，项目整体生产门禁仍拒绝。"
+    },
+    {
+      "id": "PRODUCTION-READINESS-20261103",
+      "title": "生产候选加固与真实容器验收",
+      "status": "partial",
+      "depends_on": [
+        "M1-JOBS",
+        "M1-EDGE"
+      ],
+      "local_delivery_note": "本轮加固、五镜像构建、真实Linux/五服务TLS/换IP/隔离恢复验证通过；视觉镜像风险、留校网关、硬件/课堂数据及生产验收仍阻塞。"
+    },
+    {
+      "id": "M3-CODEC-DEPENDENCIES",
+      "title": "视觉编解码与基础镜像依赖整改",
+      "status": "pending",
+      "depends_on": [
+        "M0-FOUNDATION"
+      ],
+      "local_delivery_note": "保存SBOM并逐项核验可达性，受控更新编解码与最小镜像，重跑真实视频及隔离回归。"
+    },
+    {
+      "id": "M3-SCHOOL-MEDIA-GATEWAY",
+      "title": "混合云校内素材网关与元数据协议",
+      "status": "pending",
+      "depends_on": [
+        "M0-FOUNDATION"
+      ],
+      "local_delivery_note": "当前云端Java上传会保存原文件，需实现并验收原始录像始终留校。"
+    },
+    {
+      "id": "M3-GPU-CAPACITY",
+      "title": "目标硬件与300课堂录像负载容量验收",
+      "status": "pending",
+      "depends_on": [
+        "M0-FOUNDATION"
+      ],
+      "local_delivery_note": "GPU尚未采购，SLA未确认；已有样例基线不能替代目标测量。"
+    },
+    {
+      "id": "M3-CLASSROOM-EVALUATION",
+      "title": "课堂标注、行为精度与AI事实一致性",
+      "status": "pending",
+      "depends_on": [
+        "M0-FOUNDATION"
+      ],
+      "local_delivery_note": "尚缺人工课堂标签与验收数据，不生成准确率。"
     }
   ],
   "status_definitions": {

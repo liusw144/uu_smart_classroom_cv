@@ -10,7 +10,7 @@ public class AuditJavaBoundaries {
     catch (Throwable error) { results.add(name + "\tfailed\t" + error.getClass().getSimpleName()); }
   }
   static void rejected(LoginService service, String password) {
-    try { service.login("audit-school", "audit-user", password); }
+    try { service.login("audit-school", "audit-user", password, "127.0.0.1"); }
     catch (AuthenticationFailed expected) { return; }
     throw new AssertionError("无效密码未被拒绝");
   }
@@ -23,11 +23,15 @@ public class AuditJavaBoundaries {
       }
       public Optional<Account> findActiveById(long id) { return Optional.of(account); }
     };
-    var service = new LoginService(repository, encoder::matches, encoder.encode("dummy-audit"));
-    run("J01_valid_password", () -> { if (service.login("audit-school", "audit-user", "audit-password").tenantId() != 1) throw new AssertionError(); });
+    LoginBudget budget = (school, username, source) -> new LoginBudget.Permit() {
+      public void identify(long accountId) {}
+      public void close() {}
+    };
+    var service = new LoginService(repository, encoder::matches, encoder.encode("dummy-audit"), budget);
+    run("J01_valid_password", () -> { if (service.login("audit-school", "audit-user", "audit-password", "127.0.0.1").tenantId() != 1) throw new AssertionError(); });
     run("J02_wrong_password", () -> rejected(service, "wrong-password"));
     run("J03_wrong_school", () -> {
-      try { service.login("other-school", "audit-user", "audit-password"); }
+      try { service.login("other-school", "audit-user", "audit-password", "127.0.0.1"); }
       catch (AuthenticationFailed expected) { return; }
       throw new AssertionError();
     });

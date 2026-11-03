@@ -1,6 +1,7 @@
 server:
   port: 8089
   shutdown: graceful
+  forward-headers-strategy: none
   error:
     include-message: never
     include-stacktrace: never
@@ -57,6 +58,28 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
 classroom:
+  queue:
+    school-limit: ${QUEUE_SCHOOL_LIMIT:300}
+    global-limit: ${QUEUE_GLOBAL_LIMIT:3000}
+  security:
+    login:
+      namespace: ${LOGIN_BUDGET_NAMESPACE:uu-login-v1}
+      account-limit: ${LOGIN_ACCOUNT_LIMIT:15}
+      source-limit: ${LOGIN_SOURCE_LIMIT:120}
+      global-limit: ${LOGIN_GLOBAL_LIMIT:300}
+      parallelism: ${LOGIN_PARALLELISM:4}
+      window-seconds: ${LOGIN_WINDOW_SECONDS:60}
+      lease-seconds: ${LOGIN_LEASE_SECONDS:120}
+  storage:
+    owner-bytes: ${STORAGE_OWNER_BYTES:1073741824}
+    school-bytes: ${STORAGE_SCHOOL_BYTES:10737418240}
+    global-bytes: ${STORAGE_GLOBAL_BYTES:107374182400}
+    owner-files: ${STORAGE_OWNER_FILES:10000}
+    school-files: ${STORAGE_SCHOOL_FILES:50000}
+    global-files: ${STORAGE_GLOBAL_FILES:500000}
+    minimum-free-bytes: ${STORAGE_MINIMUM_FREE_BYTES:2147483648}
+    pending-seconds: ${STORAGE_PENDING_SECONDS:900}
+    cleanup-delay-ms: ${STORAGE_CLEANUP_DELAY_MS:30000}
   ai:
     url: ${AI_SERVICE_URL:http://127.0.0.1:18188}
     token: ${AI_SERVICE_TOKEN:}
@@ -66,6 +89,10 @@ classroom:
     lock: ${MODEL_LOCK_PATH:classpath:models/demo-assets.lock.json}
   artifacts:
     root: ${CLASSROOM_ARTIFACT_ROOT:../runtime/artifacts}
+    global-bytes: ${ARTIFACT_GLOBAL_BYTES:107374182400}
+    school-bytes: ${ARTIFACT_SCHOOL_BYTES:10737418240}
+    max-files: ${ARTIFACT_MAX_FILES:500000}
+    minimum-free-bytes: ${ARTIFACT_MINIMUM_FREE_BYTES:2147483648}
   edge:
     node-id: ${EDGE_NODE_ID:local-edge-01}
     token: ${EDGE_SERVICE_TOKEN:}

@@ -15,8 +15,19 @@ import tools.jackson.databind.json.JsonMapper;
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = "classroom.bootstrap.enabled=false")
+    properties = {
+      "classroom.bootstrap.enabled=false",
+      "classroom.storage.cleanup-delay-ms=3600000",
+      "classroom.queue.maintenance-ms=3600000"
+    })
 abstract class SchoolHttpITSupport {
+  @org.springframework.test.context.DynamicPropertySource
+  static void isolatedLoginBudget(
+      org.springframework.test.context.DynamicPropertyRegistry registry) {
+    String namespace = "it-login-" + java.util.UUID.randomUUID();
+    registry.add("classroom.security.login.namespace", () -> namespace);
+  }
+
   private boolean ownsFixtures;
 
   static {
@@ -29,6 +40,11 @@ abstract class SchoolHttpITSupport {
   @LocalServerPort int port;
   @Autowired JdbcTemplate jdbc;
   @Autowired BCryptPasswordEncoder passwords;
+  @Autowired org.springframework.data.redis.core.StringRedisTemplate redis;
+
+  @org.springframework.beans.factory.annotation.Value("${classroom.security.login.namespace}")
+  String loginNamespace;
+
   final HttpClient http = HttpClient.newHttpClient();
   final JsonMapper json = new JsonMapper();
   String teacher;
@@ -71,7 +87,7 @@ abstract class SchoolHttpITSupport {
             Integer.class)
         > 0) {
       jdbc.query(
-          "SELECT id,tenant_id FROM media_asset WHERE tenant_id IN (101,102)",
+          "SELECT id,tenant_id FROM media_asset WHERE tenant_id IN (101,102) UNION SELECT asset_id AS id,tenant_id FROM media_storage_cleanup WHERE tenant_id IN (101,102)",
           (org.springframework.jdbc.core.RowCallbackHandler)
               row -> {
                 java.nio.file.Path root =
@@ -85,17 +101,25 @@ abstract class SchoolHttpITSupport {
                 if (!file.startsWith(root)) throw new IllegalStateException("测试素材清理越界");
                 try {
                   java.nio.file.Files.deleteIfExists(file);
+                  java.nio.file.Files.deleteIfExists(
+                      file.resolveSibling(file.getFileName() + ".part"));
                 } catch (java.io.IOException error) {
                   throw new IllegalStateException(error);
                 }
               });
     }
+    // 仅撤销本测试拥有的学校账本，保留同库其他数据与全局余额。
+    jdbc.update(
+        "UPDATE media_storage_usage SET used_bytes=used_bytes-(SELECT amount FROM (SELECT COALESCE(SUM(used_bytes),0) amount FROM media_storage_usage WHERE tenant_id IN (101,102) AND owner_id=0) q),file_count=file_count-(SELECT amount FROM (SELECT COALESCE(SUM(file_count),0) amount FROM media_storage_usage WHERE tenant_id IN (101,102) AND owner_id=0) q) WHERE tenant_id=0 AND owner_id=0");
+    jdbc.update("DELETE FROM media_storage_usage WHERE tenant_id IN (101,102)");
+    jdbc.update("DELETE FROM media_storage_cleanup WHERE tenant_id IN (101,102)");
     for (String table :
         new String[] {
           "analysis_report",
           "detection_job",
           "media_asset",
           "operation_log",
+          "edge_node_certificate",
           "edge_node",
           "lesson_task",
           "course",
@@ -108,28 +132,44 @@ abstract class SchoolHttpITSupport {
               "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?",
               Integer.class,
               table)
-          > 0) jdbc.update("DELETE FROM " + table + " WHERE tenant_id IN (101,102)");
+          > 0) {
+        if (table.equals("edge_node_certificate"))
+          jdbc.update(
+              "DELETE FROM edge_node_certificate WHERE node_id IN (SELECT id FROM edge_node WHERE tenant_id IN (101,102))");
+        else jdbc.update("DELETE FROM " + table + " WHERE tenant_id IN (101,102)");
+      }
     }
     jdbc.update("DELETE FROM school_account WHERE tenant_id IN (101,102)");
     jdbc.update("DELETE FROM tenant WHERE id IN (101,102)");
+    var budgetKeys = redis.keys("{" + loginNamespace + "}:*");
+    if (budgetKeys != null && !budgetKeys.isEmpty()) redis.delete(budgetKeys);
     ownsFixtures = false;
   }
 
   HttpResponse<String> call(String method, String path, String body, String token)
       throws Exception {
     var request =
-        HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/v1" + path))
+        HttpRequest.newBuilder(URI.create(scheme() + "://127.0.0.1:" + port + "/api/v1" + path))
             .header("Content-Type", "application/json");
     if (token != null) request.header("Authorization", "Bearer " + token);
-    return http.send(
-        request
-            .method(
-                method,
-                body == null
-                    ? HttpRequest.BodyPublishers.noBody()
-                    : HttpRequest.BodyPublishers.ofString(body))
-            .build(),
-        HttpResponse.BodyHandlers.ofString());
+    return client()
+        .send(
+            request
+                .method(
+                    method,
+                    body == null
+                        ? HttpRequest.BodyPublishers.noBody()
+                        : HttpRequest.BodyPublishers.ofString(body))
+                .build(),
+            HttpResponse.BodyHandlers.ofString());
+  }
+
+  String scheme() {
+    return "http";
+  }
+
+  HttpClient client() throws Exception {
+    return http;
   }
 
   JsonNode data(HttpResponse<String> response) throws Exception {

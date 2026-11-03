@@ -1,0 +1,26 @@
+server:
+  address: 0.0.0.0
+  port: 8443
+  forward-headers-strategy: none
+  ssl:
+    enabled: true
+    bundle: node-control
+    client-auth: want
+    enabled-protocols: TLSv1.2,TLSv1.3
+spring:
+  ssl:
+    bundle:
+      pem:
+        node-control:
+          keystore:
+            certificate: ${CONTROL_TLS_CERT}
+            private-key: ${CONTROL_TLS_KEY}
+          truststore:
+            certificate: ${NODE_TLS_CA}
+classroom:
+  security:
+    node-mtls: true
+  bootstrap:
+    enabled: false
+  pipeline:
+    enabled: true

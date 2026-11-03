@@ -17,12 +17,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI):
         app.state.settings = config
         if config.engine == "onnx":
+            from classroom_vision.core.runtime_lock import owned_results
             from classroom_vision.inference.onnx_pose import OnnxPoseEngine
 
-            app.state.engine = OnnxPoseEngine(config)
+            with owned_results(config.result_root):
+                app.state.engine = OnnxPoseEngine(config)
+                yield
         else:
             app.state.engine = UnavailableEngine()
-        yield
+            yield
 
     app = FastAPI(title="智慧课堂内部视觉服务", version="0.1.0", lifespan=lifespan)
     app.include_router(router)

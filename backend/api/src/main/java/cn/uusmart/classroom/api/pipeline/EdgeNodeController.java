@@ -15,12 +15,20 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/internal/v1/edge")
 public class EdgeNodeController {
   private final EdgeExecutionService service;
+  private final NodeClientCertificate certificates;
+  private final jakarta.servlet.http.HttpServletRequest request;
 
-  public EdgeNodeController(EdgeExecutionService service) {
+  public EdgeNodeController(
+      EdgeExecutionService service,
+      NodeClientCertificate certificates,
+      jakarta.servlet.http.HttpServletRequest request) {
     this.service = service;
+    this.certificates = certificates;
+    this.request = request;
   }
 
   private NodePrincipal node(String id, String authorization) {
+    certificates.verify(request, id);
     return service.authenticate(id, authorization);
   }
 

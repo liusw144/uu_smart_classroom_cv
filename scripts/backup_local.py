@@ -53,16 +53,19 @@ def verify_inventory(root, inventory):
 
 @contextmanager
 def maintenance():
-    for port in (8089,):
+    for port in (8089, 5000):
         with socket.socket() as connection:
             if connection.connect_ex(("127.0.0.1", port)) == 0:
-                raise RuntimeError("请先停止backend和edge，进入维护窗口")
+                raise RuntimeError("请先停止backend、edge和vision，进入维护窗口")
     lock = ROOT / "runtime/maintenance.lock"
     lock.parent.mkdir(parents=True, exist_ok=True)
     with lock.open("x", encoding="utf-8") as target:
         target.write(str(os.getpid()))
     try:
-        with stopped_edge_lock(ROOT / "runtime/edge/worker.lock"):
+        with (
+            stopped_edge_lock(ROOT / "runtime/edge/worker.lock"),
+            stopped_edge_lock(ROOT / "runtime/edge/results/.vision.lock", "vision"),
+        ):
             yield
     finally:
         lock.unlink(missing_ok=True)
@@ -162,11 +165,7 @@ def objects(values, database):
         values,
         f"SELECT TABLE_NAME,TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='{database}' ORDER BY TABLE_NAME;",
     )
-    return {
-        line.split("\t")[0]: line.split("\t")[1]
-        for line in rows.splitlines()
-        if "\t" in line
-    }
+    return {line.split("\t")[0]: line.split("\t")[1] for line in rows.splitlines() if "\t" in line}
 
 
 def snapshot_files(root, relative, target):
@@ -183,6 +182,8 @@ def snapshot_files(root, relative, target):
             "outbox.db-wal",
             "outbox.db-shm",
             "worker.lock",
+            ".vision.lock",
+            ".artifact-budget.lock",
         }:
             continue
         destination = target / relative / item.relative_to(source)
@@ -201,9 +202,7 @@ def snapshot_files(root, relative, target):
 def backup(values):
     with maintenance():
         target = (
-            ROOT
-            / "runtime/backups"
-            / (time.strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(3))
+            ROOT / "runtime/backups" / (time.strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(3))
         )
         target.mkdir(parents=True)
         listing = objects(values, SOURCE)
@@ -255,9 +254,7 @@ def recovery_account(values, database):
     password = secrets.token_urlsafe(32)
     mysql(values, f"CREATE USER '{user}'@'127.0.0.1' IDENTIFIED BY '{password}';")
     try:
-        mysql(
-            values, f"GRANT ALL PRIVILEGES ON `{database}`.* TO '{user}'@'127.0.0.1';"
-        )
+        mysql(values, f"GRANT ALL PRIVILEGES ON `{database}`.* TO '{user}'@'127.0.0.1';")
         yield values | {"DB_USER": user, "DB_PASSWORD": password}
     finally:
         mysql(values, f"DROP USER '{user}'@'127.0.0.1';")
@@ -274,9 +271,7 @@ def restore_test(values, target):
     with maintenance():
         database = restore_name("uu_cv_restore_" + secrets.token_hex(6))
         before = target / ("source-before-" + database + ".sql")
-        views = [
-            name for name, kind in objects(values, SOURCE).items() if kind == "VIEW"
-        ]
+        views = [name for name, kind in objects(values, SOURCE).items() if kind == "VIEW"]
         dump(values, SOURCE, before, data_only=True, views=views)
         # 不使用IF NOT EXISTS，名称被占用即失败，永不覆盖或删除已有库。
         mysql(
@@ -302,12 +297,8 @@ def restore_test(values, target):
                     timeout=300,
                 )
                 if completed.returncode:
-                    raise RuntimeError(
-                        "隔离库导入失败，保留隔离库供排查；原业务库未修改"
-                    )
-            definitions = json.loads(
-                (target / "views.json").read_text(encoding="utf-8")
-            )
+                    raise RuntimeError("隔离库导入失败，保留隔离库供排查；原业务库未修改")
+            definitions = json.loads((target / "views.json").read_text(encoding="utf-8"))
             for name, ddl in definitions.items():
                 ddl = re.sub(r"DEFINER=`[^`]+`@`[^`]+`\s*", "", ddl)
                 ddl = ddl.replace("SQL SECURITY DEFINER", "SQL SECURITY INVOKER")
@@ -352,17 +343,13 @@ def restore_test(values, target):
             "table_count": sum(kind == "BASE TABLE" for kind in restored.values()),
             "view_count": len(definitions),
             "data_content_sha256_match": True,
-            "restored_file_count": sum(
-                name.startswith("files/") for name in manifest["files"]
-            ),
+            "restored_file_count": sum(name.startswith("files/") for name in manifest["files"]),
             "business_database_unchanged": True,
             "completed_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         }
         result = ROOT / "runtime/trial-evidence/backup-restore.json"
         result.parent.mkdir(parents=True, exist_ok=True)
-        result.write_text(
-            json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        result.write_text(json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8")
         print(json.dumps(evidence, ensure_ascii=False, indent=2))
 
 

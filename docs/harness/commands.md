@@ -18,4 +18,10 @@ Java集成测试按类使用独立JVM，隔离Sa-Token静态管理器与不同Sp
 
 容器：`docker compose --env-file deploy/.env -f deploy/compose.yaml config --quiet` 只检查配置；`up --build` 才实际构建启动。没有 Docker Engine 时，不把前者写为容器运行成功。
 
-生产：`python scripts/quality_gate.py --production` 当前明确失败关闭，即使提供文件和正确哈希也不会放行，因为可信生产证据验证器尚未实现。后续必须交付受控构建、来源验证和实际生产验收；不能把本机业务测试当作生产发布授权。
+ops：在独立Python 3.12环境执行uv sync --frozen、Ruff及pytest；Java全量联调前，用 `uv run --frozen python -m classroom_ops.pki lab --out ../.harness/pki-production-tests` 创建临时证书目录。CI已加入该步骤；已有目录不覆盖，过期后移到明确的历史归档目录再重新生成。
+
+候选容器：先按各Dockerfile构建uu-classroom-backend/teacher/admin/vision/edge:production-candidate，然后在根运行 `python scripts/verify_staging.py`。此脚本创建随机命名的临时容器MySQL/Redis和实验PKI，验证五服务TLS、真实模型就绪与空队列轮询，最后回收自己的容器及秘密文件；不会读取.env.local或触碰业务库。详细业务另由node e2e/local-mvp.cjs和node e2e/real-model.cjs验收。
+
+备份恢复必须先停止backend、edge和vision；维护窗口同时持有edge与视觉结果卷的系统锁。备份不会恢复进程锁文件。`python scripts/backup_local.py restore-test --backup-dir 实际备份目录` 只向新随机隔离库恢复。
+
+生产：`python scripts/quality_gate.py --production --release-key 仓库外公钥` 使用ops验证外部Ed25519签名、当前干净Git版本、有效期、七类材料与镜像摘要。当前缺真实验收和发布授权时仍拒绝。详见docs/production/release.md；本机测试不能替代生产放行。
