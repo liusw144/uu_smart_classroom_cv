@@ -31,6 +31,7 @@ public final class AnalysisService {
   public TeachingReport analyze(Actor actor, String id) {
     String result = execution.resultJson(actor, id);
     var job = media.job(actor, id);
+    media.analysisTask(actor, job.taskId());
     String facts = codec.summary(result);
     String content = ai.analyze(facts);
     var report =

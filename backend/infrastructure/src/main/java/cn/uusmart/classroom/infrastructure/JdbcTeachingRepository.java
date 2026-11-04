@@ -3,7 +3,6 @@ package cn.uusmart.classroom.infrastructure;
 import cn.uusmart.classroom.application.*;
 import cn.uusmart.classroom.domain.*;
 import java.sql.*;
-import java.time.Instant;
 import java.util.*;
 import org.springframework.jdbc.core.*;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -32,18 +31,6 @@ public class JdbcTeachingRepository implements TeachingRepository {
               r.getString("name"),
               r.getLong("class_id"),
               r.getString("term"));
-  private static final RowMapper<LessonTask> TASKS =
-      (r, n) ->
-          new LessonTask(
-              r.getLong("id"),
-              r.getLong("tenant_id"),
-              r.getLong("owner_id"),
-              r.getString("name"),
-              r.getLong("course_id"),
-              r.getLong("class_id"),
-              r.getTimestamp("scheduled_at") == null
-                  ? null
-                  : r.getTimestamp("scheduled_at").toInstant());
 
   public JdbcTeachingRepository(JdbcTemplate jdbc) {
     this.jdbc = jdbc;
@@ -169,43 +156,5 @@ public class JdbcTeachingRepository implements TeachingRepository {
 
   public void deleteCourse(Actor actor, long id) {
     delete(actor, "course", id);
-  }
-
-  public Page<LessonTask> tasks(Actor actor, String query, int page, int size) {
-    return list(actor, "lesson_task_view", query, page, size, TASKS);
-  }
-
-  public Optional<LessonTask> task(Actor actor, long id) {
-    return find(actor, "lesson_task_view", id, TASKS);
-  }
-
-  @Transactional
-  public long saveTask(
-      Actor actor, Long id, long ownerId, String name, long courseId, Instant scheduledAt) {
-    var timestamp = scheduledAt == null ? null : Timestamp.from(scheduledAt);
-    if (id == null)
-      return insert(
-          "INSERT INTO lesson_task(tenant_id,owner_id,name,course_id,scheduled_at) VALUES (?,?,?,?,?)",
-          actor.tenantId(),
-          ownerId,
-          name,
-          courseId,
-          timestamp);
-    if (jdbc.update(
-            "UPDATE lesson_task SET owner_id=?,name=?,course_id=?,scheduled_at=? WHERE tenant_id=? AND (?=1 OR owner_id=?) AND id=?",
-            ownerId,
-            name,
-            courseId,
-            timestamp,
-            actor.tenantId(),
-            actor.role() == Role.SCHOOL_ADMIN ? 1 : 0,
-            actor.userId(),
-            id)
-        == 0) throw ResourceProblem.missing();
-    return id;
-  }
-
-  public void deleteTask(Actor actor, long id) {
-    delete(actor, "lesson_task", id);
   }
 }

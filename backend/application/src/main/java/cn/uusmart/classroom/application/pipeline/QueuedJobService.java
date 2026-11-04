@@ -46,7 +46,8 @@ public final class QueuedJobService {
             "QUEUED",
             null,
             Instant.now()),
-        kind);
+        kind,
+        task.version());
     return media.job(actor, id).orElseThrow(ResourceProblem::missing);
   }
 

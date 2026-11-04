@@ -2,6 +2,13 @@
   "schema_version": 1,
   "tasks": [
     {
+      "id": "M0-GITHUB-BUILD",
+      "title": "GitHub自动验证与可下载服务构建包",
+      "status": "implemented_local",
+      "depends_on": ["M0-FOUNDATION"],
+      "local_delivery_note": "沿用完整CI，增加安装验包与有来源/摘要的ZIP；本机真实构建和独立安装通过，GitHub远端待提交后验收。详见tasks/M0-GITHUB-BUILD.md。"
+    },
+    {
       "id": "M0-IDEA-QUICKSTART",
       "title": "统一IDEA导入、启动与调试文档",
       "status": "implemented",
@@ -33,6 +40,44 @@
         "M1-IDENTITY"
       ],
       "local_delivery_note": "本机教务CRUD、归属隔离及引用保护验收通过。"
+    },
+    {
+      "id": "M1-LESSON-HISTORY",
+      "title": "课堂教务快照、生命周期与归档保护",
+      "status": "implemented_local",
+      "depends_on": [
+        "M1-TEACHING"
+      ],
+      "local_delivery_note": "V11/V12课堂教务快照、实际时段、归档、事件及永久冻结已通过Java16/专用MySQL Redis64回归与Chrome界面测试；业务库未升级，多人授课及分析配置快照另有任务。"
+    },
+    {
+      "id": "M1-TEACHING-MEMBERSHIP",
+      "title": "多人授课、代课、教研共享与教师交接",
+      "status": "pending",
+      "depends_on": [
+        "M1-LESSON-HISTORY"
+      ],
+      "local_delivery_note": "以学校和授课关系表达访问范围，保留历史责任主体，不直接批量改写历史owner。"
+    },
+    {
+      "id": "M2-RECORDING-BATCH",
+      "title": "完整录像、父子作业与全课汇总",
+      "status": "pending",
+      "depends_on": [
+        "M1-LESSON-HISTORY",
+        "M2-VIDEO"
+      ],
+      "local_delivery_note": "对齐10分钟录像及6000片规划，校内持久上传/续传、有界分段投递、部分完成、去重和全课汇总；混合云还依赖留校网关。"
+    },
+    {
+      "id": "M2-REVIEW-REPORTS",
+      "title": "人工复核、事实校验与报告版本发布",
+      "status": "pending",
+      "depends_on": [
+        "M1-LESSON-HISTORY",
+        "M2-REPORTS"
+      ],
+      "local_delivery_note": "独立保存模型原始结果、人工修订与报告版本，拒绝无证据教学结论。"
     },
     {
       "id": "M1-JOBS",
@@ -84,7 +129,10 @@
       "id": "M2-INFERENCE-DEVICE",
       "title": "CPU、NVIDIA GPU 与华为昇腾 NPU 可配置推理",
       "status": "partial",
-      "depends_on": ["M1-MODELS", "M2-VIDEO"],
+      "depends_on": [
+        "M1-MODELS",
+        "M2-VIDEO"
+      ],
       "local_delivery_note": "默认CPU，GPU/CANN独立锁文件与设备选择已接入；当前验证CPU真实素材及加速错误路径，目标GPU/昇腾硬件、驱动隔离与容量未验收。"
     },
     {

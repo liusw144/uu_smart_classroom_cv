@@ -51,7 +51,7 @@ def initialize(values, account_host='127.0.0.1'):
         raise SystemExit('通配连接来源只允许GitHub临时服务容器；本机账号保持回环限制。')
     names = {'uu_classroom_local', 'uu_classroom_test'}
     found = mysql(values, "SELECT TABLE_SCHEMA,TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA IN ('uu_classroom_local','uu_classroom_test');")
-    allowed = {'flyway_schema_history', 'tenant', 'school_account', 'school_class', 'course', 'lesson_task', 'lesson_task_view', 'school_notice', 'operation_log', 'model_catalog', 'behavior_category', 'media_asset', 'media_storage_usage', 'media_storage_cleanup', 'edge_node_certificate', 'dispatch_guard', 'detection_job', 'detection_job_view', 'analysis_report', 'edge_node'}
+    allowed = {'flyway_schema_history', 'tenant', 'school_account', 'school_class', 'course', 'lesson_task', 'lesson_task_event', 'lesson_task_view', 'school_notice', 'operation_log', 'model_catalog', 'behavior_category', 'media_asset', 'media_storage_usage', 'media_storage_cleanup', 'edge_node_certificate', 'dispatch_guard', 'detection_job', 'detection_job_view', 'analysis_report', 'edge_node'}
     for line in found.splitlines():
         if line.split('\t')[-1] not in allowed:
             raise SystemExit('目标专用库已有非本项目表，停止初始化，未修改数据。')

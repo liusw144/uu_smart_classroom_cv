@@ -121,6 +121,7 @@ abstract class SchoolHttpITSupport {
           "operation_log",
           "edge_node_certificate",
           "edge_node",
+          "lesson_task_event",
           "lesson_task",
           "course",
           "school_class",

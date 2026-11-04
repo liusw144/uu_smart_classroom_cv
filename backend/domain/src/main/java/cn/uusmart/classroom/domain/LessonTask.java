@@ -9,4 +9,13 @@ public record LessonTask(
     String name,
     long courseId,
     long classId,
-    Instant scheduledAt) {}
+    Instant scheduledAt,
+    Instant scheduledEndAt,
+    String roomName,
+    String status,
+    Instant actualStartedAt,
+    Instant actualEndedAt,
+    Instant archivedAt,
+    long version,
+    boolean metadataLocked,
+    LessonSnapshot snapshot) {}

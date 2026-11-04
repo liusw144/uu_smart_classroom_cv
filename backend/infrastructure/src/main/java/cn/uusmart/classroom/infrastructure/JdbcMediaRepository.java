@@ -6,6 +6,7 @@ import java.sql.Timestamp;
 import java.util.*;
 import org.springframework.jdbc.core.*;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public class JdbcMediaRepository implements MediaRepository {
@@ -93,7 +94,9 @@ public class JdbcMediaRepository implements MediaRepository {
         .findFirst();
   }
 
-  public void createJob(DetectionJob j) {
+  @Transactional
+  public void createJob(DetectionJob j, long taskVersion) {
+    LessonWriteGuard.lockWritable(jdbc, j.tenantId(), j.taskId(), j.ownerId(), taskVersion);
     jdbc.update(
         "INSERT INTO detection_job(id,tenant_id,owner_id,task_id,asset_id,model_id,model_version,status,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
         j.id(),
@@ -145,12 +148,16 @@ public class JdbcMediaRepository implements MediaRepository {
         .findFirst();
   }
 
+  @Transactional
   public void deleteJob(Actor actor, String id) {
+    lockDeletion(actor, "detection_job", id);
     if (jdbc.update("DELETE FROM detection_job WHERE " + SCOPE + " AND id=?", args(actor, id)) == 0)
       throw ResourceProblem.missing();
   }
 
-  public void createReport(TeachingReport r) {
+  @Transactional
+  public void createReport(TeachingReport r, long taskVersion) {
+    LessonWriteGuard.lockWritable(jdbc, r.tenantId(), r.taskId(), r.ownerId(), taskVersion);
     jdbc.update(
         "INSERT INTO analysis_report(id,tenant_id,owner_id,task_id,title,content,source,created_at) VALUES (?,?,?,?,?,?,?,?)",
         r.id(),
@@ -190,8 +197,24 @@ public class JdbcMediaRepository implements MediaRepository {
         .findFirst();
   }
 
+  @Transactional
   public void deleteReport(Actor actor, String id) {
+    lockDeletion(actor, "analysis_report", id);
     if (jdbc.update("DELETE FROM analysis_report WHERE " + SCOPE + " AND id=?", args(actor, id))
         == 0) throw ResourceProblem.missing();
+  }
+
+  private void lockDeletion(Actor actor, String table, String id) {
+    // 表名仅来自上面两个固定调用，不接受浏览器输入。
+    var row =
+        jdbc
+            .query(
+                "SELECT task_id,owner_id FROM " + table + " WHERE " + SCOPE + " AND id=?",
+                (r, n) -> new long[] {r.getLong(1), r.getLong(2)},
+                args(actor, id))
+            .stream()
+            .findFirst()
+            .orElseThrow(ResourceProblem::missing);
+    LessonWriteGuard.lockWritable(jdbc, actor.tenantId(), row[0], row[1]);
   }
 }

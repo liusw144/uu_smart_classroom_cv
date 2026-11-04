@@ -34,7 +34,17 @@ public class TeachingController {
       @NotBlank @Size(max = 64) String term) {}
 
   public record TaskInput(
-      @NotBlank @Size(max = 128) String name, @Positive long courseId, Instant scheduledAt) {}
+      @NotBlank @Size(max = 128) String name,
+      @Positive long courseId,
+      Instant scheduledAt,
+      Instant scheduledEndAt,
+      @Size(max = 128) String roomName,
+      @Min(0) Long version) {}
+
+  public record TransitionInput(
+      @NotBlank @Pattern(regexp = "START|COMPLETE|ARCHIVE") String action,
+      @NotNull @Min(0) Long version,
+      Instant occurredAt) {}
 
   @GetMapping("/classes")
   public ApiResponse<Page<SchoolClass>> classes(
@@ -140,7 +150,31 @@ public class TeachingController {
   private ApiResponse<LessonTask> saveTask(Long id, TaskInput input) {
     return new ApiResponse<>(
         service.saveTask(
-            current.get(), id, input.name().trim(), input.courseId(), input.scheduledAt()));
+            current.get(),
+            id,
+            new LessonTaskEdit(
+                input.name().trim(),
+                input.courseId(),
+                input.scheduledAt(),
+                input.scheduledEndAt(),
+                input.roomName(),
+                input.version())));
+  }
+
+  @PostMapping("/tasks/{id}/transition")
+  public ApiResponse<LessonTask> transition(
+      @PathVariable long id, @Valid @RequestBody TransitionInput input) {
+    return new ApiResponse<>(
+        service.transitionTask(
+            current.get(), id, input.action(), input.version(), input.occurredAt()));
+  }
+
+  @GetMapping("/tasks/{id}/events")
+  public ApiResponse<Page<LessonTaskEvent>> events(
+      @PathVariable long id,
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "20") int size) {
+    return new ApiResponse<>(service.taskEvents(current.get(), id, page, size));
   }
 
   @DeleteMapping("/tasks/{id}")

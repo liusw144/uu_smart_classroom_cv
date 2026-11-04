@@ -4,6 +4,7 @@ import cn.uusmart.classroom.application.*;
 import cn.uusmart.classroom.application.pipeline.PipelineRepository;
 import cn.uusmart.classroom.domain.*;
 import cn.uusmart.classroom.domain.pipeline.*;
+import cn.uusmart.classroom.infrastructure.LessonWriteGuard;
 import java.sql.*;
 import java.time.Instant;
 import java.util.*;
@@ -79,8 +80,9 @@ public class JdbcPipelineRepository implements PipelineRepository {
   }
 
   @Transactional
-  public void enqueue(DetectionJob j, String kind) {
+  public void enqueue(DetectionJob j, String kind, long taskVersion) {
     jdbc.queryForObject("SELECT id FROM dispatch_guard WHERE id=1 FOR UPDATE", Integer.class);
+    LessonWriteGuard.lockWritable(jdbc, j.tenantId(), j.taskId(), j.ownerId(), taskVersion);
     recoverLocked();
     long global =
         jdbc.queryForObject(
@@ -293,7 +295,9 @@ public class JdbcPipelineRepository implements PipelineRepository {
         == 0) throw ResourceProblem.conflict("已结束的作业不能取消");
   }
 
+  @Transactional
   public void createAiReport(TeachingReport r, String jobId, String model, String hash) {
+    LessonWriteGuard.lockWritable(jdbc, r.tenantId(), r.taskId(), r.ownerId());
     jdbc.update(
         "INSERT INTO analysis_report(id,tenant_id,owner_id,task_id,title,content,source,created_at,detection_job_id,ai_model,ai_weight_hash) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
         r.id(),

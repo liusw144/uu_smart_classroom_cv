@@ -51,7 +51,8 @@ public class UseCaseConfiguration {
   }
 
   @Bean
-  TeachingService teachingService(TeachingRepository repository, AccountRepository accounts) {
-    return new TeachingService(repository, accounts);
+  TeachingService teachingService(
+      TeachingRepository repository, AccountRepository accounts, LessonRepository lessons) {
+    return new TeachingService(repository, accounts, lessons);
   }
 }

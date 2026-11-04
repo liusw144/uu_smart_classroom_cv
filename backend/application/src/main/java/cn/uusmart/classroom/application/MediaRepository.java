@@ -10,7 +10,7 @@ public interface MediaRepository {
 
   long taskJobCount(Actor actor, long taskId, String status);
 
-  void createJob(DetectionJob job);
+  void createJob(DetectionJob job, long taskVersion);
 
   void failJob(Actor actor, String id, String code);
 
@@ -20,7 +20,7 @@ public interface MediaRepository {
 
   void deleteJob(Actor actor, String id);
 
-  void createReport(TeachingReport report);
+  void createReport(TeachingReport report, long taskVersion);
 
   Page<TeachingReport> reports(Actor actor, String query, int page, int size);
 

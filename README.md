@@ -13,6 +13,8 @@ Windows 指南以 `D:\self\uu_smart_classroom_cv` 为本地示例路径，可按
 
 ## 快速开始
 
+需要使用 GitHub 自动测试并下载已编译服务包，见根目录 [GitHub Actions 使用指南](GITHUB_ACTIONS.md)。工作流验证成功后生成 JAR、双前端、独立 Python 包及安装说明；构建通过不代替生产验收。
+
 本节合并 IDEA 导入、独立运行环境、首次初始化及调试步骤。以 Windows/PowerShell 为例，**IDEA 打开整个项目根目录，Java、前端、FastAPI、edge 分别使用自己的构建环境**。菜单名称因版本与插件有所不同，可用 `Ctrl+Shift+A` 搜索操作。
 
 ### 1. 工具与插件
@@ -245,6 +247,8 @@ IDE菜单参考：[JetBrains Maven](https://www.jetbrains.com/help/idea/maven-su
 详细验收证据见[真实模型验收](docs/qa/real-model-verification-2026-11-02.md)与[试点基础验收](docs/qa/trial-readiness-verification-2026-11-02.md)。
 
 ## 模块地图
+
+课堂任务已补创建时教务快照、实际时间、归档与变更记录。启用本批前后端前须按维护窗口备份并执行V11/V12，不能让旧后端继续写入升级后的表；本轮仅验证专用测试库。使用和范围见[课堂快照与归档](docs/guides/课堂快照与归档.md)。
 
 ```text
 backend/                  Java 21 模块化业务后端

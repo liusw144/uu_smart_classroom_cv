@@ -1,4 +1,4 @@
-name: 工程与本机业务验证
+name: 自动验证与构建包
 
 on:
   push:
@@ -15,7 +15,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       PYTHONUTF8: '1'
       UV_CACHE_DIR: ${{ github.workspace }}/runtime/cache/uv
@@ -105,6 +105,37 @@ jobs:
           python scripts/local_dev.py test
       - name: 真实浏览器业务回归
         run: python scripts/ci_browser.py
+      - name: 构建独立Python安装包与锁定依赖
+        run: |
+          for module in fastapi edge ops; do
+            uv build "$module" --wheel --out-dir "$module/dist"
+            uv export --project "$module" --frozen --no-dev --no-emit-project --output-file "$module/dist/requirements.txt" --quiet
+          done
+      - name: 在独立环境验证安装包
+        run: |
+          for module in fastapi edge ops; do
+            module_python="$RUNNER_TEMP/package-$module/bin/python"
+            uv venv --python 3.12 "$RUNNER_TEMP/package-$module"
+            uv pip sync --python "$module_python" --require-hashes "$module/dist/requirements.txt"
+            uv pip install --python "$module_python" --no-deps "$module"/dist/*.whl
+          done
+          "$RUNNER_TEMP/package-fastapi/bin/python" -c 'from classroom_vision.main import create_app; import cv2, onnxruntime'
+          "$RUNNER_TEMP/package-edge/bin/python" -m classroom_edge.worker --help
+          "$RUNNER_TEMP/package-ops/bin/python" -m classroom_ops.pki --help
+      - name: 组装服务构建包
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+        run: python scripts/package_build.py --commit "$BUILD_COMMIT"
+      - name: 保存可下载构建包
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: uu-smart-classroom-build-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
+          path: |
+            runtime/builds/*.zip
+            runtime/builds/*.zip.sha256
       - name: 保存测试报告
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

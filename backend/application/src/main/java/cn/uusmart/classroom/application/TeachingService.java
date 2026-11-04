@@ -6,10 +6,13 @@ import java.time.Instant;
 public final class TeachingService {
   private final TeachingRepository repository;
   private final AccountRepository accounts;
+  private final LessonRepository lessons;
 
-  public TeachingService(TeachingRepository repository, AccountRepository accounts) {
+  public TeachingService(
+      TeachingRepository repository, AccountRepository accounts, LessonRepository lessons) {
     this.repository = repository;
     this.accounts = accounts;
+    this.lessons = lessons;
   }
 
   public static void requireSchoolUser(Actor actor) {
@@ -77,24 +80,39 @@ public final class TeachingService {
   public Page<LessonTask> tasks(Actor actor, String query, int page, int size) {
     requireSchoolUser(actor);
     Page.validate(query, page, size);
-    return repository.tasks(actor, query, page, size);
+    return lessons.tasks(actor, query, page, size);
   }
 
   public LessonTask task(Actor actor, long id) {
     requireSchoolUser(actor);
-    return repository.task(actor, id).orElseThrow(ResourceProblem::missing);
+    return lessons.task(actor, id).orElseThrow(ResourceProblem::missing);
   }
 
   public LessonTask saveTask(
       Actor actor, Long id, String name, long courseId, Instant scheduledAt) {
-    var parent = course(actor, courseId);
-    if (id != null) task(actor, id);
-    return task(
-        actor, repository.saveTask(actor, id, parent.ownerId(), name, courseId, scheduledAt));
+    return saveTask(actor, id, new LessonTaskEdit(name, courseId, scheduledAt, null, null, null));
+  }
+
+  public LessonTask saveTask(Actor actor, Long id, LessonTaskEdit edit) {
+    requireSchoolUser(actor);
+    edit.validate();
+    return lessons.save(actor, id, edit);
+  }
+
+  public LessonTask transitionTask(
+      Actor actor, long id, String action, long version, Instant occurredAt) {
+    requireSchoolUser(actor);
+    return lessons.transition(actor, id, action, version, occurredAt);
+  }
+
+  public Page<LessonTaskEvent> taskEvents(Actor actor, long id, int page, int size) {
+    task(actor, id);
+    Page.validate("", page, size);
+    return lessons.events(actor, id, page, size);
   }
 
   public void deleteTask(Actor actor, long id) {
     task(actor, id);
-    repository.deleteTask(actor, id);
+    lessons.delete(actor, id);
   }
 }

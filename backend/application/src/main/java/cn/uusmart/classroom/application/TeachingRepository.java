@@ -1,7 +1,6 @@
 package cn.uusmart.classroom.application;
 
 import cn.uusmart.classroom.domain.*;
-import java.time.Instant;
 import java.util.Optional;
 
 public interface TeachingRepository {
@@ -20,13 +19,4 @@ public interface TeachingRepository {
   long saveCourse(Actor actor, Long id, long ownerId, String name, long classId, String term);
 
   void deleteCourse(Actor actor, long id);
-
-  Page<LessonTask> tasks(Actor actor, String query, int page, int size);
-
-  Optional<LessonTask> task(Actor actor, long id);
-
-  long saveTask(
-      Actor actor, Long id, long ownerId, String name, long courseId, Instant scheduledAt);
-
-  void deleteTask(Actor actor, long id);
 }

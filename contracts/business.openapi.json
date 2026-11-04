@@ -4145,6 +4145,182 @@
           }
         }
       }
+    },
+    "/api/v1/tasks/{id}/transition": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "post": {
+        "operationId": "transitionLessonTask",
+        "security": [
+          {
+            "sessionToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/LessonTask"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LessonTransitionInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{id}/events": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "get": {
+        "operationId": "listLessonTaskEvents",
+        "security": [
+          {
+            "sessionToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/LessonTaskEvent"
+                          }
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "page": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "size": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      },
+                      "required": [
+                        "items",
+                        "total",
+                        "page",
+                        "size"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -4531,6 +4707,27 @@
               "null"
             ],
             "format": "date-time"
+          },
+          "scheduled_end_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "room_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128
+          },
+          "version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
           }
         },
         "required": [
@@ -4572,13 +4769,76 @@
           "class_id": {
             "type": "integer",
             "minimum": 1
+          },
+          "scheduled_end_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "room_name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PLANNED",
+              "LEGACY",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "ARCHIVED"
+            ]
+          },
+          "actual_started_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "actual_ended_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "archived_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/LessonSnapshot"
+          },
+          "metadata_locked": {
+            "type": "boolean"
           }
         },
         "required": [
           "id",
           "tenant_id",
+          "owner_id",
           "name",
-          "course_id"
+          "course_id",
+          "scheduled_at",
+          "class_id",
+          "scheduled_end_at",
+          "room_name",
+          "status",
+          "actual_started_at",
+          "actual_ended_at",
+          "archived_at",
+          "version",
+          "snapshot",
+          "metadata_locked"
         ]
       },
       "ModelCatalogInput": {
@@ -5475,6 +5735,131 @@
           "filename",
           "content_type",
           "size"
+        ]
+      },
+      "LessonSnapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "course_name": {
+            "type": "string"
+          },
+          "class_name": {
+            "type": "string"
+          },
+          "grade": {
+            "type": "string"
+          },
+          "student_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 500
+          },
+          "term": {
+            "type": "string"
+          },
+          "owner_name": {
+            "type": "string"
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "CREATED",
+              "REASSIGNED",
+              "LEGACY_BACKFILL"
+            ]
+          }
+        },
+        "required": [
+          "course_name",
+          "class_name",
+          "grade",
+          "student_count",
+          "term",
+          "owner_name",
+          "captured_at",
+          "source"
+        ]
+      },
+      "LessonTransitionInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "START",
+              "COMPLETE",
+              "ARCHIVE"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "occurred_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "action",
+          "version"
+        ]
+      },
+      "LessonTaskEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "actor_id": {
+            "type": "integer"
+          },
+          "actor_name": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "from_status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to_status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "actor_id",
+          "actor_name",
+          "action",
+          "from_status",
+          "to_status",
+          "version",
+          "occurred_at",
+          "note"
         ]
       }
     }

@@ -25,7 +25,7 @@ onMounted(async () => {
       loadOptions(props.api, 'models'),
       props.api.request('GET', '/capabilities'),
     ])
-    tasks.value = a
+    tasks.value = a.filter((item) => item.status !== 'ARCHIVED')
     mode.value = String(capability.execution_mode)
     models.value = b.filter(
       (item) => item.enabled && (mode.value !== 'EDGE' || item.code === capability.model_version),

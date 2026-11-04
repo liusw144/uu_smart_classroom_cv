@@ -18,7 +18,7 @@ public final class MediaService {
   public MediaAsset uploadForTask(
       Actor actor, Long taskId, String filename, String type, byte[] bytes) {
     if (taskId == null) return upload(actor, filename, type, bytes);
-    var task = teaching.task(actor, taskId);
+    var task = analysisTask(actor, taskId);
     return uploadOwned(actor, task.ownerId(), filename, type, bytes);
   }
 
@@ -54,6 +54,12 @@ public final class MediaService {
 
   public MediaAsset upload(Actor actor, String filename, String type, byte[] bytes) {
     return uploadOwned(actor, actor.userId(), filename, type, bytes);
+  }
+
+  public LessonTask analysisTask(Actor actor, long taskId) {
+    var task = teaching.task(actor, taskId);
+    if (task.status().equals("ARCHIVED")) throw ResourceProblem.conflict("课堂已归档，不能新增分析或报告");
+    return task;
   }
 
   private MediaAsset uploadOwned(
@@ -129,7 +135,7 @@ public final class MediaService {
 
   public DetectionJob submit(
       Actor actor, long taskId, String assetId, long modelId, String requestedKind) {
-    var task = teaching.task(actor, taskId);
+    var task = analysisTask(actor, taskId);
     var asset = asset(actor, assetId);
     var model = catalog.entry(actor, SchoolContentRepository.Catalog.MODEL, modelId);
     if (asset.ownerId() != task.ownerId()) throw ResourceProblem.invalid("素材与课堂任务必须由同一负责人持有");
@@ -155,7 +161,8 @@ public final class MediaService {
             model.code(),
             "RUNNING",
             null,
-            Instant.now()));
+            Instant.now()),
+        task.version());
     String reason;
     try {
       reason = vision.unavailableReason(id, asset, model.code());
@@ -186,21 +193,27 @@ public final class MediaService {
   }
 
   public TeachingReport createReport(Actor actor, long taskId, String title) {
-    var task = teaching.task(actor, taskId);
-    var course = teaching.course(actor, task.courseId());
-    var schoolClass = teaching.schoolClass(actor, task.classId());
+    var task = analysisTask(actor, taskId);
+    var snapshot = task.snapshot();
     long failed = repository.taskJobCount(actor, taskId, "FAILED");
     String content =
         "课堂任务："
             + task.name()
             + "\n班级："
-            + schoolClass.name()
+            + snapshot.className()
             + "\n课程："
-            + course.name()
+            + snapshot.courseName()
             + "\n教务录入班级人数："
-            + schoolClass.studentCount()
+            + snapshot.studentCount()
             + "\n该课堂任务失败作业数："
             + failed
+            + "\n教务快照记录时间（UTC）："
+            + snapshot.capturedAt()
+            + "\n教务快照来源："
+            + snapshot.source()
+            + (snapshot.source().equals("LEGACY_BACKFILL")
+                ? "\n历史初始化快照：以上资料来自升级时的教务现值，不能保证代表课堂发生时的原始资料。"
+                : "\n以上教务资料取自本课堂保存的快照。")
             + "\n本报告来自教务数据与作业状态，不包含课堂行为判断。\n本模板不调用视觉模型或AI，不能据此评价学生专注度、行为或教师教学质量。";
     var report =
         new TeachingReport(
@@ -212,7 +225,7 @@ public final class MediaService {
             content,
             "LOCAL_TEACHING_TEMPLATE",
             Instant.now());
-    repository.createReport(report);
+    repository.createReport(report, task.version());
     return report(actor, report.id());
   }
 

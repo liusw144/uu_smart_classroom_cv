@@ -3,12 +3,14 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { errorMessage, loadOptions, type PageData, type SchoolApi } from '../api'
 import { displayValue, type Resource } from '../features/resources'
 import DetectionResult from './DetectionResult.vue'
+import LessonDetail from './LessonDetail.vue'
 const props = defineProps<{ api: SchoolApi; resource: Resource; admin: boolean }>()
 const rows = ref<Record<string, unknown>[]>([])
 const selected = ref<Record<string, unknown>>()
 const form = reactive<Record<string, string | number | boolean>>({})
 const references = reactive<Record<string, Record<string, unknown>[]>>({})
 const editing = ref<string>()
+const editVersion = ref<number>()
 const formVisible = ref(false)
 const query = ref('')
 const status = ref('')
@@ -100,6 +102,7 @@ async function load() {
 }
 async function open(row?: Record<string, unknown>) {
   editing.value = row ? String(row.id) : undefined
+  editVersion.value = typeof row?.version === 'number' ? row.version : undefined
   for (const key of Object.keys(form)) delete form[key]
   for (const field of props.resource.fields)
     form[field.key] =
@@ -120,7 +123,8 @@ async function open(row?: Record<string, unknown>) {
     for (const field of fields.value)
       if (field.reference)
         references[field.reference] = (await loadOptions(props.api, field.reference)).filter(
-          (item) => item.enabled !== false,
+          (item) =>
+            item.enabled !== false && (field.reference !== 'tasks' || item.status !== 'ARCHIVED'),
         )
   } catch (cause) {
     error.value = errorMessage(cause)
@@ -132,6 +136,11 @@ async function save() {
   message.value = ''
   try {
     const input: Record<string, unknown> = {}
+    if (props.resource.key === 'tasks' && editing.value) {
+      if (editVersion.value === undefined)
+        throw new Error('课堂缺少版本信息，请升级后端并刷新后重试')
+      input.version = editVersion.value
+    }
     for (const field of fields.value) {
       const value = form[field.key]
       if (field.reference) {
@@ -161,6 +170,11 @@ async function remove(row: Record<string, unknown>) {
   error.value = ''
   message.value = ''
   try {
+    if (['detections', 'reports'].includes(props.resource.key)) {
+      const task = await props.api.request('GET', `/tasks/${row.task_id}`)
+      if (task.status === 'ARCHIVED')
+        throw new Error('所属课堂已归档，检测结果和报告保留为只读历史')
+    }
     await props.api.request('DELETE', `/${props.resource.key}/${row.id}`)
     selected.value = undefined
     message.value = '已删除'
@@ -301,12 +315,23 @@ onMounted(load)
             </td>
             <td class="row-actions">
               <button class="secondary" @click="inspect(row)">查看</button
-              ><button v-if="mayWrite && resource.editable" class="secondary" @click="open(row)">
+              ><button
+                v-if="
+                  mayWrite &&
+                  resource.editable &&
+                  (resource.key !== 'tasks' || !row.metadata_locked)
+                "
+                class="secondary"
+                @click="open(row)"
+              >
                 编辑</button
               ><button
                 v-if="mayWrite && resource.deletable"
                 class="danger"
-                :disabled="busy"
+                :disabled="
+                  busy ||
+                  (resource.key === 'tasks' && (row.status !== 'PLANNED' || !!row.metadata_locked))
+                "
                 @click="remove(row)"
               >
                 删除
@@ -344,6 +369,12 @@ onMounted(load)
         <p>来源：{{ displayValue(selected.source) }}</p>
         <pre>{{ selected.content }}</pre>
       </template>
+      <LessonDetail
+        v-else-if="resource.key === 'tasks'"
+        :api="api"
+        :task-id="String(selected.id)"
+        @changed="load"
+      />
       <template v-else>
         <DetectionResult
           v-if="resource.key === 'detections' && selected.status === 'SUCCEEDED'"
