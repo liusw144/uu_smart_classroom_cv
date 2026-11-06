@@ -2,6 +2,13 @@
   "schema_version": 1,
   "tasks": [
     {
+      "id": "CI-BROWSER-20261107",
+      "title": "浏览器回归清理兼容课堂历史保护",
+      "status": "implemented_local",
+      "depends_on": ["M0-GITHUB-BUILD", "M1-LESSON-HISTORY"],
+      "local_delivery_note": "真实隔离库复现旧清理409；修复后浏览器17项通过，正式删除保护保留。未提交/推送，远端新构建待验收。详见tasks/CI-BROWSER-20261107.md。"
+    },
+    {
       "id": "M0-GITHUB-BUILD",
       "title": "GitHub自动验证与可下载服务构建包",
       "status": "implemented_local",

@@ -28,7 +28,7 @@ async function run(name, action) {
     throw error
   }
 }
-async function request(method, route, token, body) {
+async function request(method, route, token, body, expectedStatus = 200) {
   const response = await fetch(`http://127.0.0.1:8089/api/v1${route}`, {
     method,
     headers: {
@@ -38,8 +38,8 @@ async function request(method, route, token, body) {
     ...(body ? { body: JSON.stringify(body) } : {}),
   })
   const value = await response.json()
-  assert.equal(response.status, 200, JSON.stringify(value))
-  return value.data
+  assert.equal(response.status, expectedStatus, `${method} ${route}: ${JSON.stringify(value)}`)
+  return expectedStatus === 200 ? value.data : value
 }
 async function save(page, route, method = 'POST') {
   const pending = page.waitForResponse(
@@ -327,15 +327,53 @@ async function login(page, audience, username, password) {
           ['detections', jobId],
           ['assets', assetId],
           ['assets', avatarId],
-          ['tasks', taskId],
-          ['courses', courseId],
-          ['classes', classId],
           ['notices', noticeId],
           ['models', modelId],
-          ['users', userId],
         ])
           if (id) await request('DELETE', `/${route}/${id}`, adminToken)
-        results.push({ name: '按本次记录编号清理人工测试业务数据', status: 'passed' })
+        const lesson = taskId ? await request('GET', `/tasks/${taskId}`, adminToken) : null
+        if (lesson?.metadata_locked) {
+          // 已使用课堂应保留历史；仅对本次明确记录的归属链断言预期拒绝，其他清理错误仍使回归失败。
+          for (const [route, id] of [
+            ['tasks', taskId],
+            ['courses', courseId],
+            ['classes', classId],
+          ]) {
+            const conflict = await request('DELETE', `/${route}/${id}`, adminToken, undefined, 409)
+            assert.equal(conflict.error.code, 'CONFLICT')
+          }
+          const retained = await request('GET', `/tasks/${taskId}`, adminToken)
+          assert.equal(retained.metadata_locked, true)
+          assert.deepEqual(retained.snapshot, lesson.snapshot)
+          assert.equal(retained.course_id, courseId)
+          assert.equal(retained.class_id, classId)
+          assert.equal(retained.owner_id, userId)
+          const disabled = await request('PUT', `/users/${userId}`, adminToken, {
+            display_name: '端到端验证教师',
+            role: 'TEACHER',
+            enabled: false,
+          })
+          assert.equal(disabled.enabled, false)
+          results.push({
+            name: '按编号清理可删除数据，验证历史保留并停用本次合成教师',
+            status: 'passed',
+            retained_history: {
+              task_id: taskId,
+              course_id: courseId,
+              class_id: classId,
+              user_id: userId,
+            },
+          })
+        } else {
+          for (const [route, id] of [
+            ['tasks', taskId],
+            ['courses', courseId],
+            ['classes', classId],
+            ['users', userId],
+          ])
+            if (id) await request('DELETE', `/${route}/${id}`, adminToken)
+          results.push({ name: '按本次记录编号清理未使用的人工测试业务数据', status: 'passed' })
+        }
       } catch (error) {
         results.push({
           name: '清理人工测试业务数据',

@@ -51,6 +51,7 @@ Expand-Archive -LiteralPath $buildZip.FullName -DestinationPath '.\uu-classroom-
 - `Actions → 对应运行 → verify → 失败步骤` 查看日志；同次运行的 `开发验证报告` 保存已生成的 Java XML 与浏览器结果。早期失败时可能还没有报告。
 - `npm ci`、`uv sync --frozen` 失败：修正依赖声明与锁文件，不能改成忽略锁文件。GitHub 上不使用本机 `.venv` 或 `node_modules`。
 - Java 联调失败：确认 CI 隔离 MySQL/Redis 正常及本次迁移/测试一起提交；不能上传本机 `.env.local` 代替临时环境。
+- 浏览器清理步骤出现“已使用或归档课堂应保留历史，不能直接删除 / 409”：课堂历史保护已生效，旧E2E清理逻辑不适用。提交本次修正后的 `frontend/e2e/local-mvp.cjs`；脚本会核验明确的历史删除拒绝、快照/归属保留并停用合成教师，其他清理错误仍失败。临时CI数据库随服务容器回收；在本机持久库运行时会保留已使用的合成教务历史，优先使用隔离测试环境。
 - 打包缺失产物或发现多个旧 JAR/wheel：修正构建输出。打包器不会猜测使用哪一份，也不会上传残缺成功包。
 - 前端 dist 只允许常见静态 Web 文件；录像、模型、表格数据及未知类型会拒绝打包，应移出构建目录。新增必要静态类型需审查打包清单，不能将业务素材塞入前端。
 - `Run workflow` 不出现：确认默认分支已有工作流、Actions 开启且有运行权限。
